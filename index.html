@@ -1,131 +1,203 @@
 <!doctype html>
 <html lang="pt-BR">
 <head>
+<!-- NEVADA v8: UI frost-glass (HUD/menu/resultados), tutorial adiantado, BONUS ok -->
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <title>NEVADA &#8212; Ski 3D</title>
 <style>
+/* ============================================================
+   NEVADA UI v8 - sistema "frost glass"
+   Principios aplicados (pesquisa de UI de jogos):
+   - hierarquia visual: 1 elemento dominante por tela (velocidade no
+     HUD, botao INICIAR no menu); escala + contraste + espaco em branco
+   - consistencia: raios, alturas, espaamentos e cores de significado
+     identicos em todas as telas
+   - feedback: hover/active/focus em tudo; nada silencioso
+   - legibilidade a distancia: numericos tabulares grandes, rotulos
+     curtos em caixa alta com tracking largo, contraste alto
+   - HUD periferico: centro da tela livre, informacao nos cantos
+   ============================================================ */
 :root{
-  --accent:#4fc3f7; --accent2:#ff7043; --gold:#ffd54f;
-  --bg0:#0b1524; --bg1:#12233b;
-  --panel:rgba(9,18,32,.78); --line:rgba(120,190,255,.20); --txt:#eaf4ff; --dim:#9db8d0;
+  --accent:#5cc8ff; --accent2:#9d6cff; --gold:#ffd54f; --hot:#ff8a5c;
+  --bg0:#060b14; --bg1:#0d1a2c;
+  --panel:rgba(9,16,28,.80); --line:rgba(130,195,255,.15); --line2:rgba(130,195,255,.32);
+  --txt:#eef6ff; --dim:#a9c4dd; --dim2:#7e9cba;
+  --r-lg:20px; --r-md:12px; --r-sm:9px;
+  --fnt:"Segoe UI Variable Text","Segoe UI",system-ui,-apple-system,Roboto,"Helvetica Neue",sans-serif;
 }
 *{margin:0;padding:0;box-sizing:border-box}
-html,body{width:100%;height:100%;overflow:hidden;background:#0b1524}
-body{font-family:"Segoe UI",system-ui,-apple-system,Roboto,sans-serif;color:var(--txt);
-  -webkit-user-select:none;user-select:none;touch-action:none}
+html,body{width:100%;height:100%;overflow:hidden;background:var(--bg0)}
+body{font-family:var(--fnt);color:var(--txt);-webkit-user-select:none;user-select:none;touch-action:none}
+button{-webkit-tap-highlight-color:transparent;font-family:inherit}
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px;border-radius:4px}
 #glcanvas{position:fixed;inset:0;width:100%;height:100%;display:block}
 #vignette{position:fixed;inset:0;pointer-events:none;z-index:4;
-  background:radial-gradient(ellipse at 50% 42%,transparent 58%,rgba(5,12,24,.42) 100%)}
+  background:radial-gradient(ellipse at 50% 42%,transparent 55%,rgba(4,9,18,.46) 100%)}
+/* ===== telas e paineis ===== */
 .screen{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;
-  flex-direction:column;z-index:10;background:radial-gradient(ellipse at 50% 30%,rgba(10,22,40,.25),rgba(5,12,24,.55))}
+  flex-direction:column;z-index:10;animation:screenIn .22s ease;
+  background:radial-gradient(ellipse at 50% 28%,rgba(10,22,40,.30),rgba(4,9,18,.62))}
+@keyframes screenIn{from{opacity:0}to{opacity:1}}
 .hidden{display:none!important}
-.panel{position:relative;background:var(--panel);backdrop-filter:blur(14px) saturate(1.3);border:1px solid var(--line);
-  border-radius:22px;padding:26px 30px;max-width:min(92vw,560px);width:100%;max-height:88vh;overflow:auto;
-  box-shadow:0 24px 70px rgba(0,0,0,.6),inset 0 1px 0 rgba(255,255,255,.06),0 0 0 1px rgba(79,195,247,.05)}
-.panel::before{content:"";position:absolute;top:0;left:28px;right:28px;height:2px;border-radius:2px;
-  background:linear-gradient(90deg,transparent,#4fc3f7 30%,#9d6cff 70%,transparent)}
-h1{font-size:clamp(34px,7vw,58px);letter-spacing:.12em;font-weight:900;
-  background:linear-gradient(115deg,#ffffff 0%,#4fc3f7 38%,#9d6cff 62%,#ff7043 100%);
+.panel{position:relative;background:linear-gradient(180deg,rgba(13,24,42,.86),rgba(8,15,27,.82));
+  backdrop-filter:blur(16px) saturate(1.35);-webkit-backdrop-filter:blur(16px) saturate(1.35);
+  border:1px solid var(--line);border-radius:var(--r-lg);padding:28px 32px;
+  max-width:min(92vw,560px);width:100%;max-height:88vh;overflow:auto;
+  box-shadow:0 30px 80px rgba(0,0,0,.62),inset 0 1px 0 rgba(255,255,255,.07),0 0 0 1px rgba(92,200,255,.04)}
+.panel::before{content:"";position:absolute;top:0;left:30px;right:30px;height:2px;border-radius:2px;
+  background:linear-gradient(90deg,transparent,var(--accent) 30%,var(--accent2) 70%,transparent)}
+.panel::after{content:"";position:absolute;bottom:0;left:30px;right:30px;height:1px;
+  background:linear-gradient(90deg,transparent,rgba(130,195,255,.22),transparent)}
+.screen>.panel{animation:panelIn .34s cubic-bezier(.21,.9,.32,1.12)}
+@keyframes panelIn{from{transform:translateY(14px) scale(.985);opacity:0}to{transform:none;opacity:1}}
+h1{font-size:clamp(38px,7vw,60px);letter-spacing:.14em;font-weight:900;
+  background:linear-gradient(115deg,#ffffff 0%,var(--accent) 40%,var(--accent2) 68%,#ff9d6c 100%);
   background-size:200% 100%;-webkit-background-clip:text;background-clip:text;color:transparent;
-  animation:sheen 7s ease-in-out infinite;filter:drop-shadow(0 4px 18px rgba(79,195,247,.35))}
+  animation:sheen 7s ease-in-out infinite;filter:drop-shadow(0 6px 22px rgba(92,200,255,.30))}
 @keyframes sheen{0%,100%{background-position:0% 0}50%{background-position:100% 0}}
-h2{font-size:20px;letter-spacing:.06em;margin-bottom:14px;color:var(--accent)}
-.tagline{color:var(--dim);letter-spacing:.30em;font-size:11.5px;margin:8px 0 22px;text-transform:uppercase}
+h2{font-size:21px;letter-spacing:.08em;margin-bottom:14px;color:var(--accent);font-weight:700}
+.tagline{color:var(--dim2);letter-spacing:.34em;font-size:11.5px;margin:10px 0 24px;text-transform:uppercase;
+  display:flex;align-items:center;gap:12px;justify-content:center}
+.tagline::before,.tagline::after{content:"";height:1px;width:36px;flex:none}
+.tagline::before{background:linear-gradient(90deg,transparent,var(--line2))}
+.tagline::after{background:linear-gradient(90deg,var(--line2),transparent)}
+/* ===== botoes: hierarquia + feedback ===== */
 .btn{display:block;width:100%;border:1px solid var(--line);position:relative;overflow:hidden;
-  background:linear-gradient(180deg,rgba(79,195,247,.14),rgba(79,195,247,.04));
-  color:var(--txt);border-radius:14px;padding:12px 16px;font-size:16px;letter-spacing:.05em;cursor:pointer;
-  margin-top:10px;transition:transform .09s ease,box-shadow .18s ease,background .18s ease;text-align:center}
-.btn:hover{background:linear-gradient(180deg,rgba(79,195,247,.32),rgba(79,195,247,.12));
-  transform:translateY(-1px);box-shadow:0 8px 26px rgba(79,195,247,.22)}
-.btn:active{transform:translateY(1px)}
-.btn.primary{font-size:19px;font-weight:800;padding:15px;border-color:rgba(79,195,247,.60);
-  background:linear-gradient(180deg,rgba(79,195,247,.42),rgba(29,116,201,.20));
-  box-shadow:0 6px 24px rgba(79,195,247,.25)}
+  background:linear-gradient(180deg,rgba(92,200,255,.10),rgba(92,200,255,.03));
+  color:var(--txt);border-radius:var(--r-md);padding:13px 16px;font-size:15.5px;font-weight:600;
+  letter-spacing:.05em;cursor:pointer;margin-top:10px;text-align:center;
+  transition:transform .10s ease,box-shadow .20s ease,background .20s ease,border-color .20s ease,filter .10s ease}
+.btn:hover{background:linear-gradient(180deg,rgba(92,200,255,.22),rgba(92,200,255,.08));border-color:var(--line2);
+  transform:translateY(-1px);box-shadow:0 10px 28px rgba(92,200,255,.18)}
+.btn:active{transform:translateY(1px) scale(.99);filter:brightness(1.15)}
+.btn.primary{font-size:19px;font-weight:800;letter-spacing:.12em;text-transform:uppercase;padding:16px;
+  border-color:rgba(92,200,255,.55);
+  background:linear-gradient(180deg,rgba(92,200,255,.50),rgba(60,110,220,.24));
+  box-shadow:0 8px 30px rgba(92,200,255,.28),inset 0 1px 0 rgba(255,255,255,.22)}
+.btn.primary:hover{box-shadow:0 12px 38px rgba(92,200,255,.40),inset 0 1px 0 rgba(255,255,255,.22)}
 .btn.primary::after{content:"";position:absolute;top:0;left:-70%;width:45%;height:100%;
-  background:linear-gradient(105deg,transparent,rgba(255,255,255,.28),transparent);
+  background:linear-gradient(105deg,transparent,rgba(255,255,255,.30),transparent);
   animation:shine 3.2s ease-in-out infinite}
 @keyframes shine{0%{left:-70%}55%,100%{left:130%}}
-.btn.danger{border-color:rgba(255,112,67,.40)}
-.btn.danger:hover{box-shadow:0 8px 26px rgba(255,112,67,.25)}
-.btn[disabled]{opacity:.4;cursor:not-allowed}
+.btn.danger{border-color:rgba(255,138,92,.35)}
+.btn.danger:hover{background:linear-gradient(180deg,rgba(255,110,70,.18),rgba(255,110,70,.06));
+  box-shadow:0 10px 28px rgba(255,110,70,.20)}
+.btn[disabled]{opacity:.38;cursor:not-allowed}
 .row{display:flex;gap:10px;flex-wrap:wrap}.row .btn{flex:1 1 40%}
-.seg{display:flex;border:1px solid var(--line);border-radius:14px;overflow:hidden;margin-top:8px;
-  background:rgba(8,17,30,.5)}
-.seg button{flex:1;background:transparent;color:var(--dim);border:0;padding:13px 6px;font-size:14px;
-  cursor:pointer;letter-spacing:.04em;transition:background .15s,color .15s}
-.seg button.on{background:linear-gradient(180deg,rgba(79,195,247,.40),rgba(79,195,247,.14));
-  color:#fff;font-weight:700;box-shadow:inset 0 0 18px rgba(79,195,247,.18)}
-.lbl{font-size:11.5px;color:var(--dim);letter-spacing:.22em;text-transform:uppercase;margin-top:18px}
+/* ===== seletores segmentados (chips) ===== */
+.seg{display:flex;gap:6px;border:1px solid var(--line);border-radius:var(--r-md);overflow:hidden;margin-top:8px;
+  background:rgba(6,12,22,.45);padding:5px}
+.seg button{flex:1;background:transparent;color:var(--dim);border:0;border-radius:var(--r-sm);padding:12px 6px;
+  font-size:14px;font-weight:600;cursor:pointer;letter-spacing:.03em;
+  transition:background .18s,color .18s,box-shadow .18s}
+.seg button:hover{color:#fff;background:rgba(92,200,255,.10)}
+.seg button.on{background:linear-gradient(180deg,rgba(92,200,255,.42),rgba(92,200,255,.16));color:#fff;
+  font-weight:800;box-shadow:inset 0 0 20px rgba(92,200,255,.16),0 2px 10px rgba(92,200,255,.18)}
+.lbl{font-size:11px;color:var(--dim2);letter-spacing:.26em;text-transform:uppercase;margin-top:20px;
+  display:flex;align-items:center;gap:12px}
+.lbl::after{content:"";flex:1;height:1px;background:linear-gradient(90deg,var(--line2),transparent)}
 input[type=range]{width:100%;accent-color:var(--accent);margin-top:8px}
 .check{display:flex;align-items:center;gap:10px;margin-top:14px;font-size:15px;color:var(--dim)}
 .check input{accent-color:var(--accent);width:17px;height:17px}
 table.keys{width:100%;border-collapse:collapse;font-size:14.5px}
-table.keys td{padding:7px 8px;border-bottom:1px solid rgba(120,190,255,.10)}
-table.keys td:first-child{color:var(--accent);white-space:nowrap;width:38%}
-kbd{background:rgba(79,195,247,.14);border:1px solid var(--line);border-bottom-width:2px;border-radius:6px;
-  padding:1px 7px;font-family:inherit;font-size:13px}
-/* ===== Identidade de marca (cabecalho consistente em todas as telas) ===== */
-.mhead{display:flex;align-items:center;gap:12px;margin-bottom:14px;padding-bottom:12px;border-bottom:1px solid var(--line)}
-.mhead svg{width:36px;height:36px;flex:none;filter:drop-shadow(0 2px 10px rgba(79,195,247,.45))}
+table.keys tr:hover td{background:rgba(92,200,255,.05)}
+table.keys td{padding:8px;border-bottom:1px solid rgba(130,195,255,.09)}
+table.keys td:first-child{color:var(--accent);white-space:nowrap;width:38%;font-weight:600}
+kbd{background:rgba(92,200,255,.12);border:1px solid var(--line2);border-bottom-width:2px;border-radius:6px;
+  padding:1px 7px;font-family:inherit;font-size:13px;font-weight:600}
+/* ===== identidade de marca ===== */
+.mhead{display:flex;align-items:center;gap:12px;margin-bottom:16px;padding-bottom:12px;border-bottom:1px solid var(--line)}
+.mhead svg{width:38px;height:38px;flex:none;filter:drop-shadow(0 2px 12px rgba(92,200,255,.45))}
 .mtitle{font-weight:900;letter-spacing:.22em;font-size:16px;line-height:1.1;
-  background:linear-gradient(115deg,#fff 20%,#4fc3f7 70%,#9d6cff);-webkit-background-clip:text;background-clip:text;color:transparent}
-.msub{font-size:10px;color:var(--dim);letter-spacing:.30em;text-transform:uppercase;margin-top:2px}
+  background:linear-gradient(115deg,#fff 20%,var(--accent) 70%,var(--accent2));
+  -webkit-background-clip:text;background-clip:text;color:transparent}
+.msub{font-size:10px;color:var(--dim2);letter-spacing:.30em;text-transform:uppercase;margin-top:2px}
 .hsec{font-size:11.5px;color:var(--accent);letter-spacing:.22em;text-transform:uppercase;margin:18px 0 6px}
-/* ===== HUD ===== */
+/* ===== HUD: periferico, glanceable, velocidade e o heroi ===== */
 #hud{position:fixed;inset:0;pointer-events:none;z-index:5;font-variant-numeric:tabular-nums}
-.hudbox{position:absolute;background:linear-gradient(180deg,rgba(12,24,42,.72),rgba(8,17,30,.62));
-  backdrop-filter:blur(8px);border:1px solid var(--line);border-radius:16px;padding:10px 16px;
-  box-shadow:0 8px 28px rgba(0,0,0,.35),inset 0 1px 0 rgba(255,255,255,.07)}
-#hud-speed{top:14px;left:14px;text-align:left;min-width:124px}
-#hud-speed .v{font-size:36px;font-weight:900;line-height:1;
-  background:linear-gradient(180deg,#ffffff,#7fd4ff);-webkit-background-clip:text;background-clip:text;color:transparent}
-#hud-speed .u{font-size:11px;color:var(--dim);letter-spacing:.24em;margin-top:2px}
-#hud-time{top:14px;left:50%;transform:translateX(-50%);text-align:center;min-width:112px}
-#hud-time .v{font-size:24px;font-weight:700}
-#hud-time .u{font-size:10px;color:var(--dim);letter-spacing:.24em}
-#hud-score{top:14px;right:14px;text-align:right;min-width:134px}
-#hud-score .v{font-size:26px;font-weight:900;
-  background:linear-gradient(180deg,#ffffff,#4fc3f7);-webkit-background-clip:text;background-clip:text;color:transparent}
-#hud-score .u{font-size:10px;color:var(--dim);letter-spacing:.24em}
-#hud-combo{font-size:12px;color:var(--gold);font-weight:800;letter-spacing:.08em;
+.hudbox{position:absolute;background:linear-gradient(180deg,rgba(12,24,42,.66),rgba(7,14,26,.56));
+  backdrop-filter:blur(7px);-webkit-backdrop-filter:blur(7px);border:1px solid var(--line);
+  border-radius:14px;padding:10px 16px;box-shadow:0 10px 30px rgba(0,0,0,.38),inset 0 1px 0 rgba(255,255,255,.08)}
+#hud-speed{top:14px;left:14px;text-align:left;min-width:132px;border-left:3px solid var(--accent)}
+#hud-speed .v{font-size:40px;font-weight:900;line-height:1;
+  background:linear-gradient(180deg,#ffffff,#8fdcff);-webkit-background-clip:text;background-clip:text;color:transparent}
+#hud-speed .u{font-size:10px;color:var(--dim2);letter-spacing:.26em;margin-top:2px}
+#hud-speed .sbar{height:4px;border-radius:2px;background:rgba(130,195,255,.14);margin-top:7px;overflow:hidden}
+#hud-speed .sbar i{display:block;height:100%;width:0;border-radius:2px;
+  background:linear-gradient(90deg,#5cc8ff,#9d6cff);box-shadow:0 0 8px rgba(92,200,255,.55);
+  transition:width .12s linear}
+#hud-time{top:14px;left:50%;transform:translateX(-50%);text-align:center;min-width:112px;padding:8px 16px}
+#hud-time .v{font-size:23px;font-weight:800}
+#hud-time .u{font-size:9.5px;color:var(--dim2);letter-spacing:.26em}
+#hud-score{top:14px;right:14px;text-align:right;min-width:138px;border-right:3px solid var(--gold)}
+#hud-score .v{font-size:27px;font-weight:900;
+  background:linear-gradient(180deg,#ffffff,var(--gold));-webkit-background-clip:text;background-clip:text;color:transparent}
+#hud-score .u{font-size:10px;color:var(--dim2);letter-spacing:.26em}
+#hud-combo{font-size:12px;color:var(--gold);font-weight:800;letter-spacing:.08em;margin-top:2px;
   text-shadow:0 0 12px rgba(255,213,79,.55)}
 #hud-sub{bottom:14px;left:14px;font-size:14px;color:var(--dim)}
 #hud-sub b{color:#fff;font-weight:600}
-#hud-msg{bottom:16px;left:50%;transform:translateX(-50%);font-size:16px;font-weight:800;letter-spacing:.06em;
-  background:linear-gradient(180deg,rgba(214,52,52,.92),rgba(160,26,26,.92));border:1px solid rgba(255,138,128,.4);
-  border-radius:12px;padding:9px 20px;opacity:0;transition:opacity .25s;box-shadow:0 8px 30px rgba(0,0,0,.4)}
-#hud-msg.show{opacity:1}
+#hud-msg{bottom:16px;left:50%;font-size:16px;font-weight:800;letter-spacing:.06em;white-space:nowrap;
+  background:linear-gradient(180deg,rgba(224,58,58,.94),rgba(150,24,24,.94));border:1px solid rgba(255,140,128,.45);
+  border-radius:12px;padding:9px 20px;opacity:0;transform:translateX(-50%) translateY(6px);
+  transition:opacity .25s,transform .25s;box-shadow:0 12px 36px rgba(0,0,0,.45),0 0 20px rgba(255,80,60,.18)}
+#hud-msg.show{opacity:1;transform:translateX(-50%) translateY(0)}
+/* aviso GRANDE centralizado para as acoes de teleferico (E embarcar, F turbo) */
+#hud-prompt{position:absolute;left:50%;bottom:24%;transform:translateX(-50%);
+  display:none;align-items:center;gap:14px;padding:14px 26px;border-radius:16px;
+  background:rgba(8,18,34,.86);border:2px solid rgba(92,200,255,.9);
+  font-size:22px;font-weight:800;letter-spacing:.06em;color:var(--txt);white-space:nowrap;
+  text-shadow:0 2px 8px rgba(0,0,0,.7);
+  box-shadow:0 10px 36px rgba(0,0,0,.55),0 0 22px rgba(92,200,255,.4);
+  pointer-events:none;z-index:45;animation:hudPromptPulse 1.05s ease-in-out infinite}
+#hud-prompt.show{display:flex}
+#hud-prompt .kbadge{display:inline-block;min-width:38px;padding:7px 12px;border-radius:9px;
+  background:linear-gradient(180deg,var(--accent),var(--accent2));color:#fff;font-size:26px;font-weight:900;
+  text-align:center;box-shadow:0 3px 12px rgba(0,0,0,.5),inset 0 1px 0 rgba(255,255,255,.35)}
+@keyframes hudPromptPulse{0%,100%{transform:translateX(-50%) scale(1)}50%{transform:translateX(-50%) scale(1.07)}}
+/* vinheta de FOGO acima de 400 km/h */
+#hud-fire{position:absolute;inset:0;pointer-events:none;opacity:0;transition:opacity .12s;z-index:44;
+  background:radial-gradient(ellipse at center,transparent 52%,rgba(255,110,0,.45) 74%,rgba(255,20,0,.7) 100%);
+  box-shadow:inset 0 0 90px 24px rgba(255,60,0,.5)}
+#hud-fire.burn{opacity:1;animation:hudFirePulse .16s ease-in-out infinite alternate}
+@keyframes hudFirePulse{from{opacity:.55}to{opacity:1}}
 #hud.godmode #hud-time,#hud.godmode #hud-score{display:none}
+/* ===== avisos flutuantes (pills de vidro) ===== */
 #toasts{position:fixed;inset:0;pointer-events:none;z-index:6;overflow:hidden}
 .toast{position:absolute;font-weight:900;font-size:21px;color:#fff;white-space:nowrap;letter-spacing:.04em;
-  text-shadow:0 0 16px rgba(79,195,247,.75),0 2px 8px rgba(0,0,0,.8);
+  padding:6px 16px;border-radius:999px;background:rgba(8,16,30,.55);border:1px solid rgba(130,195,255,.22);
+  backdrop-filter:blur(4px);-webkit-backdrop-filter:blur(4px);
+  text-shadow:0 0 16px rgba(92,200,255,.75),0 2px 8px rgba(0,0,0,.8);
   animation:toastUp 1.15s ease-out forwards}
 @keyframes toastUp{0%{opacity:0;transform:translateY(10px) scale(.72)}
   16%{opacity:1;transform:translateY(0) scale(1.12)}28%{transform:scale(1)}
   70%{opacity:1}100%{opacity:0;transform:translateY(-52px)}}
-/* ===== Results ===== */
-#results .grade{font-size:72px;font-weight:900;letter-spacing:.1em;line-height:1;
-  background:linear-gradient(125deg,#ffd54f 20%,#ff9d43 60%,#ff7043 100%);
+/* ===== resultados ===== */
+#results .grade{font-size:80px;font-weight:900;letter-spacing:.1em;line-height:1;
+  background:linear-gradient(125deg,var(--gold) 20%,#ff9d43 60%,var(--hot) 100%);
   -webkit-background-clip:text;background-clip:text;color:transparent;
   filter:drop-shadow(0 6px 22px rgba(255,160,60,.45))}
-.statgrid{display:grid;grid-template-columns:1fr 1fr;gap:8px 20px;margin:16px 0;font-size:14.5px}
-.statgrid .k{color:var(--dim)} .statgrid .v{text-align:right;font-weight:700;color:#fff}
+.statgrid{display:grid;grid-template-columns:1fr 1fr;gap:0 20px;margin:16px 0;font-size:14.5px;
+  border-top:1px solid var(--line)}
+.statgrid .k{color:var(--dim);padding:8px 0;border-bottom:1px solid rgba(130,195,255,.09)}
+.statgrid .v{text-align:right;font-weight:700;color:#fff;padding:8px 0;border-bottom:1px solid rgba(130,195,255,.09)}
 .newrec{color:var(--gold);font-weight:800;letter-spacing:.1em;margin:6px 0;font-size:15px;
-  text-shadow:0 0 14px rgba(255,213,79,.6)}
-/* ===== Diag ===== */
-#diag{position:fixed;top:60px;right:12px;z-index:20;background:rgba(2,8,16,.82);border:1px solid var(--line);
-  border-radius:12px;padding:10px 14px;font:11.5px/1.55 Consolas,monospace;color:#9fe8b4;
+  text-shadow:0 0 14px rgba(255,213,79,.6);animation:recPop .6s cubic-bezier(.2,.9,.3,1.3)}
+@keyframes recPop{0%{transform:scale(.6);opacity:0}100%{transform:scale(1);opacity:1}}
+/* ===== diagnostico ===== */
+#diag{position:fixed;top:60px;right:12px;z-index:20;background:rgba(3,9,17,.85);border:1px solid var(--line);
+  border-radius:12px;padding:10px 14px;font:11.5px/1.55 Consolas,Menlo,monospace;color:#9fe8b4;
   max-width:330px;max-height:74vh;overflow:auto;box-shadow:0 12px 40px rgba(0,0,0,.5)}
 #diag .err{color:#ff8a80}
-/* ===== Touch ===== */
+/* ===== toque ===== */
 #touch{position:fixed;inset:0;z-index:8;display:none;pointer-events:none}
 body.touchmode #touch{display:block}
-.tbtn{position:absolute;pointer-events:auto;background:rgba(12,24,40,.55);border:1px solid rgba(120,190,255,.4);
+.tbtn{position:absolute;pointer-events:auto;background:rgba(12,24,40,.55);border:1px solid rgba(130,195,255,.35);
   color:#dceeff;border-radius:50%;display:flex;align-items:center;justify-content:center;font-weight:800;
-  font-size:13px;letter-spacing:.06em;backdrop-filter:blur(4px);
-  box-shadow:0 6px 20px rgba(0,0,0,.35),inset 0 1px 0 rgba(255,255,255,.10)}
-.tbtn:active,.tbtn.on{background:rgba(79,195,247,.45);box-shadow:0 0 24px rgba(79,195,247,.4)}
+  font-size:13px;letter-spacing:.06em;backdrop-filter:blur(4px);-webkit-backdrop-filter:blur(4px);
+  box-shadow:0 6px 20px rgba(0,0,0,.35),inset 0 1px 0 rgba(255,255,255,.10);transition:background .12s}
+.tbtn:active,.tbtn.on{background:rgba(92,200,255,.45);box-shadow:0 0 24px rgba(92,200,255,.4)}
 #t-left{left:16px;bottom:96px;width:76px;height:76px;font-size:27px}
 #t-right{left:108px;bottom:96px;width:76px;height:76px;font-size:27px}
 #t-brake{right:16px;bottom:162px;width:72px;height:60px;border-radius:18px}
@@ -133,13 +205,15 @@ body.touchmode #touch{display:block}
 #t-skid{right:16px;bottom:84px;width:72px;height:60px;border-radius:18px}
 #t-jump{right:104px;bottom:84px;width:64px;height:60px;border-radius:18px}
 #t-pause{right:14px;top:64px;width:46px;height:40px;font-size:16px;border-radius:12px}
-/* ===== Boot/Error ===== */
+/* ===== boot / erro ===== */
 #boot .panel,#errbox .panel{text-align:center}
-.spin{width:38px;height:38px;margin:16px auto;border-radius:50%;border:3px solid var(--line);
-  border-top-color:var(--accent);animation:spin 1s linear infinite}
+.spin{width:40px;height:40px;margin:16px auto;border-radius:50%;border:3px solid rgba(130,195,255,.18);
+  border-top-color:var(--accent);animation:spin 1s linear infinite;position:relative}
+.spin::after{content:"";position:absolute;inset:5px;border-radius:50%;border:2px solid transparent;
+  border-bottom-color:var(--accent2);animation:spin 1.4s linear infinite reverse}
 @keyframes spin{to{transform:rotate(360deg)}}
 .note{font-size:12.5px;color:var(--dim);margin-top:14px;line-height:1.6}
-.menufoot{margin-top:18px;font-size:12px;color:var(--dim);letter-spacing:.05em;text-align:center;line-height:2.2}
+.menufoot{margin-top:18px;font-size:12px;color:var(--dim2);letter-spacing:.04em;text-align:center;line-height:2.3}
 @media (max-width:700px){
   .panel{padding:18px 16px}
   #hud-speed .v{font-size:28px}
@@ -147,33 +221,66 @@ body.touchmode #touch{display:block}
   #hud-sub{bottom:190px}
   #hud-time{top:64px}
 }
-/* tutorial interativo */
+/* ===== previa do personagem ===== */
+#char-preview{position:fixed;right:18px;top:50%;transform:translateY(-50%);width:200px;
+  background:linear-gradient(180deg,rgba(16,32,54,.92),rgba(9,20,36,.90));
+  border:1px solid rgba(92,200,255,.40);border-radius:16px;padding:12px 12px 10px;text-align:center;
+  pointer-events:none;box-shadow:0 10px 36px rgba(0,0,0,.45);
+  backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px)}
+#char-preview::after{content:"";position:absolute;left:0;right:0;top:0;height:2px;
+  border-radius:16px 16px 0 0;background:linear-gradient(90deg,var(--accent),var(--accent2),var(--gold))}
+#char-preview .cp-head{font-size:11px;font-weight:700;letter-spacing:.16em;
+  text-transform:uppercase;color:#8fdcff;margin-bottom:6px}
+#char-preview .cp-name{font-size:15px;font-weight:800;color:var(--txt);margin-top:2px}
+#char-preview .cp-sub{font-size:11px;color:rgba(238,246,255,.5);margin-top:3px}
+#char-preview canvas{display:block;margin:0 auto;pointer-events:auto;cursor:grab;touch-action:none}
+@media (max-width:940px){#char-preview{display:none}}
+/* ===== tutorial ===== */
 #tut{position:absolute;left:0;right:0;top:14px;display:flex;justify-content:center;pointer-events:none;z-index:40;padding:0 12px}
-#tut .tutbox{pointer-events:auto;position:relative;background:linear-gradient(180deg,rgba(16,32,54,.94),rgba(9,20,36,.92));border:1px solid rgba(79,195,247,.45);border-radius:16px;padding:16px 22px 14px;max-width:600px;min-width:340px;text-align:center;box-shadow:0 10px 36px rgba(0,0,0,.45),inset 0 1px 0 rgba(255,255,255,.06);backdrop-filter:blur(6px)}
-#tut .tutbox::after{content:"";position:absolute;left:0;right:0;top:0;height:2px;border-radius:16px 16px 0 0;background:linear-gradient(90deg,#4fc3f7,#7c4dff,#ffd54f)}
+#tut .tutbox{pointer-events:auto;position:relative;
+  background:linear-gradient(180deg,rgba(16,32,54,.94),rgba(9,20,36,.92));
+  border:1px solid rgba(92,200,255,.45);border-radius:16px;padding:16px 22px 14px;max-width:600px;min-width:340px;
+  text-align:center;box-shadow:0 10px 36px rgba(0,0,0,.45),inset 0 1px 0 rgba(255,255,255,.06);
+  backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px)}
+#tut .tutbox::after{content:"";position:absolute;left:0;right:0;top:0;height:2px;border-radius:16px 16px 0 0;
+  background:linear-gradient(90deg,var(--accent),var(--accent2),var(--gold))}
 #tut:not(.hidden) .tutbox{animation:tutin .35s ease}
 @keyframes tutin{from{transform:translateY(-14px);opacity:0}to{transform:none;opacity:1}}
 #tut .tuttop{display:flex;justify-content:center;margin-bottom:10px}
-#tut .tutstep{font-size:11px;letter-spacing:.18em;color:#7fd4ff;font-weight:700;text-transform:uppercase;
-  background:rgba(79,195,247,.12);border:1px solid rgba(79,195,247,.32);border-radius:999px;padding:4px 14px}
-#tut .tutlink{background:none;border:none;color:rgba(234,244,255,.45);font-size:11px;cursor:pointer;text-decoration:underline;padding:2px 4px;font-family:inherit;flex:none}
+#tut .tutstep{font-size:11px;letter-spacing:.18em;color:#8fdcff;font-weight:700;text-transform:uppercase;
+  background:rgba(92,200,255,.12);border:1px solid rgba(92,200,255,.32);border-radius:999px;padding:4px 14px}
+#tut .tutlink{background:none;border:none;color:rgba(238,246,255,.45);font-size:11px;cursor:pointer;
+  text-decoration:underline;padding:2px 4px;font-family:inherit;flex:none}
 #tut .tutlink:hover{color:#ff8a80}
-#tut .tutgoal{font-size:17px;color:#eaf4ff;line-height:1.6;margin-bottom:12px}
-#tut .tutgoal b{color:#ffd54f}
+#tut .tutgoal{font-size:17px;color:var(--txt);line-height:1.6;margin-bottom:12px}
+#tut .tutgoal b{color:var(--gold)}
 #tut .tutgoal kbd{font-size:13px}
-#tut .tutbar{height:5px;border-radius:3px;background:rgba(234,244,255,.12);margin:0 0 4px;overflow:hidden}
-#tut .tutbar i{display:block;height:100%;width:0;border-radius:3px;background:linear-gradient(90deg,#4fc3f7,#7c4dff);transition:width .4s ease}
-#tut-aim{position:absolute;left:50%;top:172px;transform:translateX(-50%);display:flex;align-items:center;gap:8px;pointer-events:none;z-index:39;background:rgba(9,20,36,.78);border:1px solid rgba(79,195,247,.4);border-radius:999px;padding:5px 14px;font-size:12px;font-weight:700;letter-spacing:.1em;color:#eaf4ff;text-transform:uppercase;box-shadow:0 6px 22px rgba(0,0,0,.35)}
-#tut-aim .arw{display:inline-block;font-size:17px;line-height:1;color:#4fc3f7;text-shadow:0 0 8px rgba(79,195,247,.8);transition:transform .15s ease}
+#tut .tutbar{height:6px;border-radius:3px;background:rgba(238,246,255,.12);margin:0 0 6px;overflow:hidden}
+#tut .tutbar i{display:block;height:100%;width:0;border-radius:3px;
+  background:linear-gradient(90deg,var(--accent),var(--accent2));box-shadow:0 0 8px rgba(92,200,255,.5);
+  transition:width .4s ease}
+#tut-aim{position:absolute;left:50%;top:172px;transform:translateX(-50%);display:flex;align-items:center;gap:8px;
+  pointer-events:none;z-index:39;background:rgba(9,20,36,.78);border:1px solid rgba(92,200,255,.4);border-radius:999px;
+  padding:5px 14px;font-size:12px;font-weight:700;letter-spacing:.1em;color:var(--txt);text-transform:uppercase;
+  box-shadow:0 6px 22px rgba(0,0,0,.35)}
+#tut-aim .arw{display:inline-block;font-size:17px;line-height:1;color:var(--accent);
+  text-shadow:0 0 8px rgba(92,200,255,.8);transition:transform .15s ease}
 #tut-aim.hidden{display:none}
-#tut .tuthint{display:block;margin-top:8px;font-size:13px;color:rgba(234,244,255,.55)}
+#tut .tuthint{display:block;margin-top:8px;font-size:13px;color:rgba(238,246,255,.55)}
 #tut .tutfoot{display:flex;justify-content:space-between;align-items:center;gap:12px;min-height:40px}
 #tut .tutdots{display:flex;gap:6px;justify-content:center;margin:10px 0 14px}
-#tut .tutdots span{width:9px;height:9px;border-radius:50%;background:rgba(234,244,255,.16);display:inline-block;transition:transform .2s ease}
-#tut .tutdots span.on{background:#4fc3f7;box-shadow:0 0 8px rgba(79,195,247,.9);transform:scale(1.3)}
-#tut .tutdots span.done{background:#ffd54f}
+#tut .tutdots span{width:10px;height:10px;border-radius:50%;background:rgba(238,246,255,.16);display:inline-block;
+  transition:transform .2s ease,background .2s ease}
+#tut .tutdots span.on{background:var(--accent);box-shadow:0 0 8px rgba(92,200,255,.9);transform:scale(1.3)}
+#tut .tutdots span.done{background:var(--gold)}
 #tut .btn{font-size:13px;padding:7px 20px}
 #tut .btn.hidden{display:none}
+/* ===== movimento reduzido: efeitos cumulativos desligados ===== */
+@media (prefers-reduced-motion:reduce){
+  h1,.btn.primary::after,.spin,.spin::after{animation:none}
+  .screen,.screen>.panel,#tut:not(.hidden) .tutbox{animation:none}
+  #hud-prompt{animation:none}
+}
 </style>
 </head>
 <body>
@@ -181,11 +288,13 @@ body.touchmode #touch{display:block}
 <div id="vignette"></div>
 
 <div id="hud" class="hidden">
-  <div class="hudbox" id="hud-speed"><div class="v">0</div><div class="u">KM/H</div></div>
+  <div class="hudbox" id="hud-speed"><div class="v">0</div><div class="u">KM/H</div><div class="sbar"><i id="hud-speedbar"></i></div></div>
   <div class="hudbox" id="hud-time"><div class="v">0:00.0</div><div class="u">TEMPO</div></div>
   <div class="hudbox" id="hud-score"><div class="v">0</div><div class="u">PONTOS</div><div id="hud-combo"></div></div>
   <div class="hudbox" id="hud-sub"></div>
   <div id="hud-msg"></div>
+  <div id="hud-prompt"></div>
+  <div id="hud-fire"></div>
 </div>
 <div id="toasts"></div>
 <div id="tut-aim" class="hidden"><span class="arw" id="tut-aim-arw">&#8593;</span><span id="tut-aim-d"></span></div>
@@ -212,6 +321,7 @@ body.touchmode #touch{display:block}
   <div class="tbtn" id="t-brake">FREIO</div>
   <div class="tbtn" id="t-skid">DERRAPAR</div>
   <div class="tbtn" id="t-jump">PULO</div>
+  <div class="tbtn" id="t-lift" style="display:none">LIFT</div>
   <div class="tbtn" id="t-pause">II</div>
 </div>
 
@@ -237,6 +347,7 @@ body.touchmode #touch{display:block}
     <button data-v="slalom">Slalom</button>
     <button data-v="free">Corrida Livre</button>
     <button data-v="endurance">Estilo</button>
+    <button data-v="world">Mundo Aberto</button>
   </div>
   <div class="lbl">Dificuldade</div>
   <div class="seg" id="seg-diff">
@@ -250,6 +361,20 @@ body.touchmode #touch{display:block}
     <button data-v="fixed">Fixa (recordes justos)</button>
     <button data-v="rand">Aleat&#243;ria</button>
   </div>
+  <div class="lbl">Equipamento</div>
+  <div class="seg" id="seg-gear">
+    <button data-v="ski">&#9553; Esqui</button>
+    <button data-v="board">&#9552; Snowboard</button>
+  </div>
+  <div class="lbl">Apar&#234;ncia</div>
+  <div class="seg" id="seg-skin">
+    <button data-v="0">Cl&#225;ssico</button>
+    <button data-v="1">Aurora</button>
+    <button data-v="2">Glacial</button>
+    <button data-v="3">Vulc&#227;o</button>
+    <button data-v="4">Meia-noite</button>
+    <button data-v="5">Alpine</button>
+  </div>
   <button class="btn primary" id="btn-start">&#9650; INICIAR DESCIDA</button>
   <div class="row">
     <button class="btn" id="btn-tutorial">Tutorial</button>
@@ -258,7 +383,9 @@ body.touchmode #touch{display:block}
     <button class="btn" id="btn-help">Como jogar</button>
   </div>
   <div class="menufoot"><kbd>A/D</kbd> virar &#8226; <kbd>W</kbd> agachar &#8226; <kbd>S</kbd> frear &#8226; <kbd>Shift</kbd> derrapar &#8226; <kbd>Espa&#231;o</kbd> saltar/manobrar &#8226; <kbd>C</kbd> c&#226;mera &#8226; <kbd>Esc</kbd> pausa</div>
-</div></div>
+</div>
+<div id="char-preview" aria-hidden="true"></div>
+</div>
 
 <div id="m-settings" class="screen hidden"><div class="panel">
   <div class="mhead"><svg viewBox="0 0 48 48" aria-hidden="true"><path d="M4 36 L18 12 L26 24 L33 16 L44 36 Z" fill="rgba(79,195,247,.12)" stroke="#4fc3f7" stroke-width="3" stroke-linejoin="round"/><circle cx="38" cy="10" r="4" fill="#ffd54f"/><path d="M10 41 h28" stroke="#eaf4ff" stroke-width="2" stroke-linecap="round"/></svg><div class="mtxt"><div class="mtitle">NEVADA</div><div class="msub">Configura&#231;&#245;es</div></div></div>
@@ -305,6 +432,8 @@ body.touchmode #touch{display:block}
     <tr><td><kbd>C</kbd></td><td>Alternar c&#226;mera (persegui&#231;&#227;o / 1&#170; pessoa)</td></tr>
     <tr><td><kbd>R</kbd></td><td>Reiniciar a descida</td></tr>
     <tr><td><kbd>H</kbd></td><td>HUD reduzido: ocultar tempo e pontua&#231;&#227;o</td></tr>
+    <tr><td><kbd>E</kbd></td><td>Embarcar no telef&#233;rico (Mundo Aberto) &#8212; no fundo do vale o <b>terminal gigante</b> embarca voc&#234; automaticamente</td></tr>
+    <tr><td><kbd>F</kbd></td><td>Turbo: acelerar a subida do telef&#233;rico</td></tr>
     <tr><td><kbd>Esc</kbd></td><td>Pausar / retomar</td></tr>
     <tr><td><kbd>F3</kbd> ou <kbd>`</kbd></td><td>Painel de diagn&#243;stico e testes</td></tr>
   </table>
@@ -336,7 +465,7 @@ body.touchmode #touch{display:block}
   </table>
 
   <div class="hsec">As rampas</div>
-  <div class="note">Existem <b>4 n&#237;veis de rampa</b>, cada um com sua cor nas bandeirinhas de borda: <b style="color:#4f8cf7">AZUL</b> (baixa e tranquila), <b style="color:#26c04f">VERDE</b> (m&#233;dia), <b style="color:#fa8c14">LARANJA</b> (alta) e <b style="color:#f01e14">VERMELHA</b> (gigante &#8212; feita para helic&#243;pteros 720). Quanto maior a rampa, mais alto o voo, mais tempo para truques&#8230; e <b>todas t&#234;m plateia ao redor</b> esperando a manobra.</div>
+  <div class="note">Existem <b>4 n&#237;veis de rampa</b>, cada um com sua cor nas bandeirinhas de borda e em <b>faixas pintadas na neve da pr&#243;pria rampa</b>: <b style="color:#4f8cf7">AZUL</b> (baixa e tranquila), <b style="color:#26c04f">VERDE</b> (m&#233;dia), <b style="color:#fa8c14">LARANJA</b> (alta) e <b style="color:#f01e14">VERMELHA</b> (gigante &#8212; feita para helic&#243;pteros 720). Quanto maior a rampa, mais alto o voo, mais tempo para truques&#8230; e <b>todas t&#234;m plateia ao redor</b> esperando a manobra.</div>
 
   <div class="hsec">A esta&#231;&#227;o de esqui</div>
   <div class="note">
@@ -350,9 +479,26 @@ body.touchmode #touch{display:block}
   <div class="note">
     <b style="color:var(--accent)">Slalom:</b> atravesse os port&#245;es na ordem, entre as bandeiras. Cada port&#227;o perdido soma +2s de penalidade. Recorde por <b>tempo</b>.<br>
     <b style="color:var(--accent)">Corrida Livre:</b> pista longa (3,4&#8211;6,4 km) sem rota obrigat&#243;ria, com <b>gargalos</b>: paredes de &#225;rvores que deixam livre s&#243; um corredor estreito ou uma abertura lateral larga. Voar por cima de pedras &#233; permitido; recorde por <b>tempo</b>.<br>
-    <b style="color:var(--accent)">Estilo:</b> pista curta e cheia de rampas &#8212; pontue com saltos, giros, grabs e pousos limpos perto da plateia. Recorde por <b>pontua&#231;&#227;o</b>.<br><br>
+    <b style="color:var(--accent)">Estilo:</b> pista curta e cheia de rampas &#8212; pontue com saltos, giros, grabs e pousos limpos perto da plateia. Recorde por <b>pontua&#231;&#227;o</b>.<br>
+    <b style="color:var(--accent)">Mundo Aberto:</b> um vale gigante sem chegada, sem cron&#244;metro e sem nota &#8212; s&#243; voc&#234;, a neve e a esta&#231;&#227;o. Escolha o seu pr&#243;prio caminho entre bowls, encostas e trilhas de bosque, e use os telef&#233;ricos para voltar ao alto quantas vezes quiser.<br><br>
     <b style="color:var(--accent)">Recordes:</b> tempo, pontos e dist&#226;ncia ficam registrados em todos os modos &#8212; o selo de "novo recorde" segue o crit&#233;rio principal de cada modo (s&#243; conta ap&#243;s completar a descida).<br><br>
     <b style="color:var(--accent)">Dicas:</b> agache nas retas, levante nas curvas; salte das rampas pela metade final para ganho m&#225;ximo; pouse alinhado com a dire&#231;&#227;o do movimento; truques perto da plateia rendem os maiores combos.
+  </div>
+
+  <div class="hsec">Mundo Aberto</div>
+  <div class="note">
+    &#9656; <b style="color:var(--accent)">Sem meta, sem press&#227;o:</b> n&#227;o existe linha de chegada nem avalia&#231;&#227;o &#8212; o HUD mostra apenas a dist&#226;ncia percorrida e a altitude. Explore &#224; vontade.<br>
+    &#9656; <b style="color:var(--accent)">Trilhas que bifurcam:</b> placas na beira da pista marcam <b>boca de bifurca&#231;&#227;o</b> &#8212; rotas alternativas com nome pr&#243;prio que serpenteiam pelo vale e reencontram a pista l&#243; embaixo. Neve batida e corredor limpo: pode confiar.<br>
+    &#9656; <b style="color:var(--accent)">Bowls:</b> depress&#245;es amplas e suaves esculpidas no vale &#8212; o lugar perfeito para carve sereno no meio das &#225;rvores. Cada bowl tem nome, e as placas da esta&#231;&#227;o apontam o caminho.<br>
+    &#9656; <b style="color:var(--accent)">Telef&#233;ricos:</b> pare devagar perto da esta&#231;&#227;o de base e aperte <kbd>E</kbd> para embarcar. Na <b style="color:var(--accent)">cadeirinha</b> voc&#234; viaja sentado com o vale l&#225; embaixo; na <b style="color:var(--accent)">g&#244;ndola</b> a c&#226;mera entra na cabine, com vista pelas janelas rumo ao topo. Ache a subida longa? Aperte <kbd>F</kbd> para o <b>turbo</b>. O desembarque &#233; autom&#225;tico l&#225; em cima &#8212; e a descida recome&#231;a de um ponto alto novo.<br>
+    &#9656; <b style="color:var(--accent)">Navega&#231;&#227;o:</b> placas espalhadas por todo o vale (n&#227;o s&#243; na pista) indicam bowls e pontos de interesse &#8212; siga-as para ach&#225;-los, ou ignore-as de prop&#243;sito e se perca de prop&#243;sito.<br>
+    &#9656; <b style="color:var(--accent)">Horizonte ampliado:</b> o mundo renderiza mais longe que qualquer outro modo &#8212; as montanhas do fundo realmente existem l&#225;.
+  </div>
+
+  <div class="hsec">Snowboard e apar&#234;ncia</div>
+  <div class="note">
+    &#9656; <b style="color:var(--accent)">Snowboard:</b> escolha Esqui ou Snowboard no menu. A prancha twin-tip tem exatamente a mesma f&#237;sica dos esquis &#8212; mesmos giros, flips, grabs e quedas &#8212; mas o corpo anda de lado e as curvas s&#227;o desenhadas com a prancha de cantinho (edging).<br>
+    &#9656; <b style="color:var(--accent)">Skins:</b> seis apar&#234;ncias no menu (Cl&#225;ssico, Aurora, Glacial, Vulc&#227;o, Meia-noite, Alpine) trocam de verdade o casaco, o capacete, a cal&#231;a e a lona da prancha/snowboard &#8212; tanto do esquiador quanto do snowboarder. A escolha fica salva com o jogo.
   </div>
   <button class="btn" id="btn-help-back" style="margin-top:14px">Voltar</button>
 </div></div>
@@ -405,8 +551,11 @@ var PHYS = {
   steerBase: 2.1,               // rad/s de guinada a baixa velocidade
   steerFall: 30,                // velocidade em que a guinada cai a metade
   skidSteerMul: 1.55,           // guinada extra ao derrapar
-  speedMax: 46,                 // teto tecnico (m/s) ~165 km/h
+  speedMax: 46,                 // so REFERENCIA de escala (vento/HUD): NAO e mais teto
+  burnSpeed: 111.1,              // 400 km/h: acima disso o atrito do ar ACENDE o esquiador
+  burnFuse: 0.85,                // s em chamas antes da explosao
   jumpVel: 2.2,                 // impulso vertical do salto (baixo e realista)
+  jumpScale: 0.25,              // intensidade de TODOS os pulos: 25% da original
   flipDur: { backflip: 0.80, frontflip: 0.88, lincoln: 0.96 }, // s por giro completo
   jumpMinSpeed: 8.333,          // velocidade minima para saltar (30 km/h)
   jumpCooldown: 0.45,           // s entre saltos
@@ -418,6 +567,12 @@ var PHYS = {
   landHardVy: -13,              // vy de aterrissagem dura
   nearMissDist: 2.3             // distancia de passagem rasante
 };
+/* TUTORIAL: multiplicador local da intensidade dos pulos. O stepGame seta
+   10x enquanto o tutorial roda (pulos ~1000% maiores: ar de sobra para
+   aprender flips, giros e grabs sem pressionar o timing) e volta a 1x em
+   qualquer outro contexto. Nos lancamentos naturais um teto de 9 m/s no
+   vy segura o exagero dentro do plausivel (voo de ~1.8 s no maximo). */
+var TUT_JUMP_BOOST = 1;
 
 /* ---------------- Core: utilidades ---------------- */
 function clamp(v, a, b){ return v < a ? a : (v > b ? b : v); }
@@ -557,8 +712,8 @@ function diffParams(mode, diff){
     P.length  = [1150, 1500, 1850, 2250][d];
     P.gates   = [13, 18, 23, 28][d];
     P.w0      = [21, 17, 13.5, 11.5][d];    // meia-largura da pista
-    P.slope0  = [0.235, 0.27, 0.305, 0.335][d];
-    P.slopeAmp= [0.05, 0.075, 0.10, 0.115][d];
+    P.slope0  = [0.35, 0.40, 0.45, 0.50][d];   // paredao: inclinacao de copa
+    P.slopeAmp= [0.075, 0.11, 0.145, 0.17][d];
     P.cx1     = [13, 19, 25, 29][d]; P.cx1p = [300, 250, 205, 200][d];
     P.cx2     = [7, 9, 12, 14][d];
     P.kmax    = [0.30, 0.44, 0.56, 0.64][d]; // inclinacao lateral maxima (m/m)
@@ -577,6 +732,24 @@ function diffParams(mode, diff){
     P.ramps   = [8, 11, 14, 17][d];
     P.density = [0.42, 0.55, 0.70, 0.82][d]; // floresta mais limpa: pista legivel
     P.chokes  = [2, 3, 4, 5][d];     // gargalos: paredes de arvores
+  } else if (mode === "world"){
+    /* MUNDO ABERTO: vale gigante sem chegada, sem portoes e sem nota -
+     bowls para carve, trilhas que bifurcam, rede de telefericos e
+     navegacao pelas placas. Mais INCLINADO (descida de verdade), vale
+     MUITO amplo e pouco definido: a rota e a que o jogador escolher
+     entre os caminhos sustentaveis. */
+    P.length  = [5500, 6800, 8200, 9600][d];
+    P.w0      = [176, 160, 140, 120][d];       // vale 4x mais largo: pista ampla
+    P.slope0  = [0.31, 0.345, 0.38, 0.42][d];
+    P.slopeAmp= [0.07, 0.09, 0.11, 0.13][d];
+    P.cx1     = [30, 38, 46, 54][d]; P.cx1p = [500, 440, 400, 380][d];
+    P.cx2     = [9, 11, 13, 15][d];
+    P.kmax    = [0.26, 0.34, 0.42, 0.48][d];
+    P.onPiste = [0.42, 0.52, 0.62, 0.72][d];  // pista CHEIA de obstaculos
+    P.ramps   = [10, 13, 16, 20][d];
+    P.density = [0.55, 0.72, 0.90, 1.05][d];
+    P.chokes  = 0;
+    P.world   = true;
   } else { // endurance -> modo ESTILO (curto, cheio de rampas sinalizadas)
     P.length  = [700, 850, 1000, 1150][d];
     P.w0      = [26, 21, 16, 14][d];
@@ -633,9 +806,27 @@ function heightAt(c, x, s){
   var dx = x - trackX(c, s);
   var h = baseHeight(c, s);
   h += c.bowlK * dx * dx;                     // vale suave que contem o jogador
+  /* MUNDO ABERTO: ombro + paredao externo. Dentro da zona alcancavel as
+     laterais seguem suaves; alem de trackW+100 o vale fecha rapido -
+     o jogador nunca sai do mesh do chunk nem ve o vao alem da borda
+     (era o glitch visual ao sair da pista pela lateral) */
+  if (c.mode === "world"){
+    var adxW = Math.abs(dx), shW = trackW(c, s) + 100;
+    if (adxW > shW) h += 0.014 * (adxW - shW) * (adxW - shW);
+  }
   var rough = smoothstep(trackW(c, s) - 8, trackW(c, s) + 22, Math.abs(dx));
   h += terrainNoise(c, x, s) * (0.28 + 1.55 * rough);
   h += rampH(c, x, s);
+  /* bowls do Mundo Aberto: depressoes gaussianas no terreno real */
+  if (c.bowls && c.bowls.length){
+    for (var bwi = 0; bwi < c.bowls.length; bwi++){
+      var B = c.bowls[bwi];
+      var bdx = x - B.cx, bds = s - B.s;
+      var bd2 = bdx * bdx + bds * bds;
+      if (bd2 < B.r * B.r * 1.7)
+        h -= B.d * Math.exp(-bd2 / (B.r * B.r));
+    }
+  }
   return h;
 }
 function gradAt(c, x, s, eps){ // [dh/dx, dh/ds]
@@ -644,26 +835,34 @@ function gradAt(c, x, s, eps){ // [dh/dx, dh/ds]
           (heightAt(c, x, s + eps) - heightAt(c, x, s - eps)) / (2 * eps)];
 }
 function pisteFactor(c, x, s){ // 1 dentro da pista, 0 fora (borda suave)
-  return 1 - smoothstep(trackW(c, s) - 3, trackW(c, s) + 3, Math.abs(x - trackX(c, s)));
+  var pf = 1 - smoothstep(trackW(c, s) - 3, trackW(c, s) + 3, Math.abs(x - trackX(c, s)));
+  /* trilhas alternativas do Mundo Aberto: cordao de neve batida -
+     mesmo visual de piste (corduroy) e mesma validade de rota */
+  if (pf < 1 && c.trailAt && c.trailAt(s, x)) pf = Math.max(pf, 0.92);
+  return pf;
 }
 
 /* ------------------------- geracao da pista ------------------------- */
-function makeCourse(mode, diff, seed){
+function makeCourse(mode, diff, seed, opts){
   var P = diffParams(mode, diff);
   for (var attempt = 0; attempt < 10; attempt++){
-    var c = buildCourse(mode, diff, seed + attempt * 7919, P);
+    var c = buildCourse(mode, diff, seed + attempt * 7919, P, false, opts);
     if (validateCourse(c)) return c;
   }
   // fallback deterministico (sempre valido: corredor reto e limpo)
-  return buildCourse(mode, diff, hashStr("fallback" + mode + diff), P, true);
+  return buildCourse(mode, diff, hashStr("fallback" + mode + diff), P, true, opts);
 }
 
-function buildCourse(mode, diff, seed, P, safeMode){
+function buildCourse(mode, diff, seed, P, safeMode, opts){
   var rnd = mulberry32(seed >>> 0);
   function rr(a, b){ return a + rnd() * (b - a); }
   var c = {
     mode: mode, diff: diff, seed: seed >>> 0, length: P.length,
-    w0: P.w0, bowlK: 0.0038,
+    /* MUNDO ABERTO: bowlK escala com w0 - a borda da pista fica na MESMA
+       elevacao (~7 m) seja qual for a largura do vale. Antes do ajuste o
+       0.0038 fixo sobre um w0 4x maior virava a lateral num paredao de
+       mais de 100 m, impossivel de alcancar. */
+    w0: P.w0, bowlK: mode === "world" ? 7.4 / (P.w0 * P.w0) : 0.0038,
     slope0: P.slope0, slopeAmp: P.slopeAmp,
     slopeK: rr(0.0032, 0.005), slopePh: rr(0, 6.283),
     cx1: P.cx1, cx1p: P.cx1p, cx1ph: rr(0, 6.283),
@@ -712,6 +911,86 @@ function buildCourse(mode, diff, seed, P, safeMode){
     return trackX(this, s) + K.wig * Math.sin((s - K.s0) * K.wk + K.wp);
   };
 
+  /* --- BOWLS (Mundo Aberto): depressoes amplas e suaves para carve,
+     linhas livres e saltos de borda. Fazem parte do terreno real:
+     heightAt as incorpora (visual == colisao) e gradAt e numerico,
+     entao a fisica do carve funciona sem codigo extra. --- */
+  c.bowls = [];
+  if (mode === "world" && !safeMode){
+    var nBw = 5 + Math.floor(rnd() * 4);
+    var bowlNames = ["Bowl da Aurora", "Circo Glacial", "Concha de Neve",
+                     "Anfiteatro", "Meia-Lua", "Palco Natural",
+                     "Circo do Vale", "Bowl do Pico"];
+    for (var bi = 0; bi < nBw; bi++){
+      var bs = 900 + (c.length - 2200) * ((bi + 0.5) / nBw) + rr(-220, 220);
+      var bofs = (rnd() < 0.5 ? -1 : 1) * rr(0.08, 0.42) * P.w0;
+      c.bowls.push({
+        s: bs, cx: trackX(c, bs) + bofs,
+        r: rr(55, 105), d: rr(2.6, 5.2),
+        name: bowlNames[bi % bowlNames.length]
+      });
+    }
+  }
+  c.bowlAt = function(s, x){
+    for (var bwi = 0; bwi < this.bowls.length; bwi++){
+      var B = this.bowls[bwi];
+      var ds = s - B.s, dx = x - B.cx;
+      if (ds * ds + dx * dx < B.r * B.r * 1.44) return B;
+    }
+    return null;
+  };
+
+  /* --- TRILHAS ALTERNATIVAS (Mundo Aberto): bifurcacoes REAIS ---
+     Cada trilha nasce NA pista principal (bifurcacao sinalizada),
+     serpenteia morro abaixo por um vale lateral proprio e REENCONTRA
+     a pista no fim: varias rotas sustentaveis entre o topo e a base.
+     Corredor limpo de arvores + cordao de neve batida (pisteFactor),
+     entao a rota e skieval do comeco ao fim. */
+  c.trails = [];
+  if (mode === "world" && !safeMode){
+    var nTr = 4 + Math.floor(rnd() * 3);   // 4-6 bifurcacoes por vale
+    var trNames = ["Trilha do Lobo", "Rota do Pico", "Descida do Rio",
+                   "Atalho da Neve", "Caminho das Marmotas",
+                   "Vale do Silencio", "Travessia do Glacial", "Ponte de Neve"];
+    var usedTr = 0;
+    for (var tri = 0; tri < nTr; tri++){
+      /* bifurcacoes ESPALHADAS pelo vale inteiro (nao aglomeradas no
+         comeco): a cada boca abre uma rota diferente de descida */
+      var tF = 1100 + (c.length - 3300) * ((tri + 0.6) / nTr) + rr(-150, 150);
+      if (tF < 950 || tF > c.length - 2400) continue;
+      var tLen = rr(1300, 2400);
+      var sideT = rnd() < 0.5 ? -1 : 1;
+      var reachT = P.w0 * rr(0.45, 0.95);   // dentro do ombro do vale (antes 1.15-1.95: inviavel)
+      var ptsT = [];
+      for (var piT = 0; piT <= 6; piT++){
+        var uT = piT / 6;
+        var ssT = tF + tLen * uT;
+        /* seno nas duas pontas: a trilha NASCE no centro da pista (boca
+           de bifurcacao limpa) e REENCONTRA a pista no fim */
+        var dxT = Math.sin(uT * Math.PI) * (reachT * sideT + (uT - 0.5) * rr(-90, 90));
+        ptsT.push({ s: ssT, x: trackX(c, ssT) + dxT });
+      }
+      c.trails.push({ name: trNames[usedTr % trNames.length],
+                      pts: ptsT, w: rr(9, 13), side: sideT });
+      usedTr++;
+    }
+  }
+  c.trailAt = function(s, x){
+    var T = this.trails;
+    if (!T || !T.length) return null;
+    for (var ti2 = 0; ti2 < T.length; ti2++){
+      var pts2 = T[ti2].pts;
+      if (s < pts2[0].s - 4 || s > pts2[pts2.length - 1].s + 4) continue;
+      for (var pj = 0; pj < pts2.length - 1; pj++){
+        if (s < pts2[pj].s || s > pts2[pj + 1].s) continue;
+        var uT2 = (s - pts2[pj].s) / (pts2[pj + 1].s - pts2[pj].s);
+        var axT = pts2[pj].x + (pts2[pj + 1].x - pts2[pj].x) * uT2;
+        if (Math.abs(x - axT) < T[ti2].w) return T[ti2];
+      }
+    }
+    return null;
+  };
+
   /* --- segmentos visuais (floresta / aberto / rochoso) --- */
   if (mode === "endurance"){
     var s0 = 0, kinds = ["forest", "open", "rocky", "open", "forest", "open"];
@@ -721,9 +1000,10 @@ function buildCourse(mode, diff, seed, P, safeMode){
       c.segs.push({ s0: s0, s1: Math.min(s0 + len, c.length), type: kinds[ki % kinds.length] });
       s0 += len; ki++;
     }
-  } else if (mode === "free"){
+  } else if (mode === "free" || mode === "world"){
     /* segmentos mistos: clareiras e zonas rochosas quebram o tunel de
-       arvores e deixam os obstaculos da pista legiveis */
+       arvores e deixam os obstaculos da pista legiveis (no Mundo Aberto
+       formam os bosques e descampados do vale) */
     var s0F = 0, kindsF = ["forest", "open", "rocky", "forest", "open"];
     var kiF = Math.floor(rnd() * 3);
     while (s0F < c.length){
@@ -809,6 +1089,16 @@ function buildCourse(mode, diff, seed, P, safeMode){
   }
   c.ramps.sort(function(a, b){ return a.s - b.s; });
 
+  /* TUTORIAL (opts.centerRamps): rampas CENTRALIZADAS no eixo da pista.
+     O re-warp posiciona o esquiador na linha central - com a rampa-alvo
+     exatamente nessa linha, basta deslizar em frente para decolar reto.
+     Ajuste ANTES da geracao de obstaculos/plateias/bandeirinhas: tudo a
+     jusante respeita a posicao nova (pe da decolagem sempre limpo). */
+  if (opts && opts.centerRamps){
+    for (var rci = 0; rci < c.ramps.length; rci++)
+      c.ramps[rci].x = trackX(c, c.ramps[rci].s);
+  }
+
   /* --- obstaculos --- */
   var idc = 0;
   var bandLen = 14;
@@ -817,6 +1107,10 @@ function buildCourse(mode, diff, seed, P, safeMode){
   for (var sB = 20; sB < c.length - 40; sB += bandLen){
     var dens = P.density * segFactor(sB + 7);
     var inChoke = !!(c.chokeAt && c.chokeAt(sB + 7));
+    /* bowls ficam limpos: neve lisa para carve, sem arvores dentro */
+    var inBowl = !!(mode === "world" && c.bowlAt &&
+                    c.bowlAt(sB + 7, trackX(c, sB + 7)));
+    if (inBowl) dens *= 0.06;
     if (mode === "endurance") dens *= 0.75 + 0.85 * (sB / c.length); // dificuldade progressiva
     var w = trackW(c, sB + 7);
 
@@ -830,8 +1124,11 @@ function buildCourse(mode, diff, seed, P, safeMode){
       var isTree = rnd() < 0.78 || inChoke;   // gargalo so arvores (sem pedras/detritos)
       var scO = isTree ? rr(0.8, 1.5) : rr(0.7, 1.6);
       var rO = isTree ? rr(0.45, 0.85) : rr(0.9, 1.9);
+      var oxT = trackX(c, ss) + sideO * dx;
+      /* corredor de trilha limpo: a bifurcacao e skieval do inicio ao fim */
+      if (c.trails.length && c.trailAt(ss, oxT)) continue;
       c.obstacles.push({
-        id: idc++, s: ss, x: trackX(c, ss) + sideO * dx,
+        id: idc++, s: ss, x: oxT,
         r: rO, t: isTree ? "tree" : "rock",
         sc: scO, rot: rr(0, 6.283),
         h: isTree ? 3.9 * scO : 1.15 * rO + 0.25
@@ -842,17 +1139,22 @@ function buildCourse(mode, diff, seed, P, safeMode){
       var sideO = rnd() < 0.5 ? -1 : 1;
       var ss = sB + rnd() * bandLen;
       var rE = rr(0.7, 1.2);
-      c.obstacles.push({ id: idc++, s: ss, x: trackX(c, ss) + sideO * (w - rr(0.5, 2.5)),
+      var oxE = trackX(c, ss) + sideO * (w - rr(0.5, 2.5));
+      if (c.trails.length && c.trailAt(ss, oxE)) continue;
+      c.obstacles.push({ id: idc++, s: ss, x: oxE,
                          r: rE, t: "rock", sc: rr(0.6, 1.1), rot: rr(0, 6.283),
                          h: 1.15 * rE + 0.25 });
     }
 
     // obstaculos DENTRO da pista (livre/resistencia) com corredor garantido
     var pOn = P.onPiste * (mode === "endurance" ? 0.6 + 0.9 * (sB / c.length) : 1);
-    if (!safeMode && pOn > 0 && sB > 220 && !inChoke){
+    if (!safeMode && pOn > 0 && sB > 220 && !inChoke && !inBowl){
       if (rnd() < pOn){
-        var lanes = [-1, 0, 1];
+        /* MUNDO ABERTO: pista 4x mais larga ganha CINCO faixas e mais
+           bloqueios por fileira - com 3 faixas fixas a pista ficava vazia */
+        var lanes = mode === "world" ? [-1, -0.55, 0, 0.55, 1] : [-1, 0, 1];
         var nBlock = ((diff === "hard" || diff === "extremo") && rnd() < 0.5) ? 2 : 1;
+        if (mode === "world") nBlock = 2 + (rnd() < 0.5 ? 1 : 0);
         var freeLanes = lanes.slice();
         // escolhe bloqueios garantindo 1 faixa livre contigua a anterior
         var okPick = false;
@@ -860,7 +1162,7 @@ function buildCourse(mode, diff, seed, P, safeMode){
           var cand = lanes.slice();
           // remove nBlock faixas aleatorias, mantendo pelo menos 1 livre
           var blocked = [];
-          while (blocked.length < nBlock){ var li = Math.floor(rnd() * 3); if (blocked.indexOf(li) < 0) blocked.push(li); }
+          while (blocked.length < nBlock){ var li = Math.floor(rnd() * lanes.length); if (blocked.indexOf(li) < 0) blocked.push(li); }
           cand = lanes.filter(function(_, q){ return blocked.indexOf(q) < 0; });
           okPick = cand.some(function(L){ return Math.abs(L - prevFreeLane) <= 1; });
           if (okPick){ freeLanes = cand; }
@@ -879,6 +1181,13 @@ function buildCourse(mode, diff, seed, P, safeMode){
                   Math.abs(lx - rp0.x) < rp0.w + 2.2){ onRamp = true; break; }
             }
             if (onRamp) continue;
+            /* bowl fica liso: nenhum obstaculo de pista dentro dele
+               (o teste do band-skip olha so o centro da fileira; aqui
+               vale a posicao real do obstaculo) */
+            if (mode === "world" && c.bowlAt && c.bowlAt(ss, lx)) continue;
+            /* boca de bifurcacao limpa: o corredor da trilha nao recebe
+               obstaculo de pista (juncao de trilha de verdade) */
+            if (c.trails.length && c.trailAt(ss, lx)) continue;
             var isTree = rnd() < 0.45;
             var scP = isTree ? rr(0.7, 1.1) : rr(0.6, 1.2);
             var rP = isTree ? rr(0.5, 0.8) : rr(0.7, 1.35);
@@ -1035,6 +1344,15 @@ function buildCourse(mode, diff, seed, P, safeMode){
     var trailNames = ["TRILHA DO PICO", "Vale Cristal", "DESCIDA NEVADA",
                       "Rota do Tigre", "PASSEIO DAS AURORAS"];
     var nSigns = Math.min(5, 1 + Math.floor(c.length / 700));
+    /* Mundo Aberto: navegacao por placas em todo o vale (e nos bowls) */
+    if (mode === "world"){
+      nSigns = Math.min(16, 9 + Math.floor(c.length / 1400));
+      trailNames = ["Mundo Aberto", "Bowl da Aurora", "Vale Cristal",
+                    "Circo Glacial", "Rota do Tigre", "Concha de Neve",
+                    "Anfiteatro", "Passeio das Auroras", "Meia-Lua",
+                    "Esta\u00e7\u00e3o Central", "Palco Natural", "Circo do Vale",
+                    "Bowl do Pico", "Descida Nevada", "Trilha do Pico"];
+    }
     for (var i = 0; i < nSigns; i++){
       var ss = 150 + (i + 0.5) * (c.length - 300) / nSigns + rr(-30, 30);
       var sd = (i % 2 === 0) ? -1 : 1;
@@ -1043,14 +1361,61 @@ function buildCourse(mode, diff, seed, P, safeMode){
                             side: sd, name: trailNames[i % trailNames.length],
                             stars: 1 + ((seed + i * 7) % 3) });
     }
-    var chS = [115, c.length * 0.5 + rr(-60, 60), c.length - 85];
+    /* placas de BIFURCACAO: na boca de cada trilha alternativa, apontando
+       o nome da rota que se abre ao lado da pista principal */
+    if (mode === "world" && c.trails && c.trails.length){
+      for (var tsI = 0; tsI < c.trails.length; tsI++){
+        var TR = c.trails[tsI];
+        var fsS = TR.pts[0].s;
+        var fsX = trackX(c, fsS) + TR.side * (trackW(c, fsS) - 2.5);
+        c.resort.signs.push({ s: fsS, x: fsX, side: TR.side,
+                              name: TR.name, stars: 2, fork: true });
+      }
+    }
+    var chS = [115, c.length * 0.5 + rr(-60, 60), c.length - (mode === "world" ? 170 : 85)];
     for (var i = 0; i < chS.length; i++){
       var ss = chS[i];
       var sd = (i === 1) ? -1 : 1;
       var wS = trackW(c, ss);
+      rr(-0.45, 0.45);   // rotacao consumida: hitbox e axis-aligned, visual reto
       c.resort.chalets.push({ s: ss, x: trackX(c, ss) + sd * (wS + 13 + rr(0, 5)),
-                              side: sd, sc: 1.15 + (i === 1 ? 0.3 : 0), rot: rr(-0.45, 0.45) });
+                              side: sd, sc: 1.15 + (i === 1 ? 0.3 : 0), rot: 0 });
     }
+    if (mode === "world"){
+      /* rede de telefericos do vale: cadeirinhas e gondolas alternadas.
+         A base (embaixo, s1) embarca; o topo (s0) desembarca - cada lift
+         devolve o explorador morro acima. Estacoes em chao firme (sem bowl). */
+      var kinds = ["chair", "gondola"];
+      var wCur = 550 + rr(0, 150);
+      while (wCur < c.length - 1500){
+        var kind = kinds[c.resort.lifts.length % 2];
+        var wSpan = kind === "gondola" ? rr(520, 780) : rr(640, 960);
+        var wTop = wCur, wBase = wCur + wSpan;
+        var guard = 0;
+        while (guard < 40 && (c.bowlAt(wTop, trackX(c, wTop)) ||
+                              c.bowlAt(wBase, trackX(c, wBase)))){
+          wTop += 150; wBase = wTop + wSpan; guard++;
+        }
+        if (wBase > c.length - 300) break;
+        c.resort.lifts.push({
+          type: kind, s0: wTop, s1: wBase,
+          side: (c.resort.lifts.length % 2 === 0) ? 1 : -1,
+          off: kind === "gondola" ? 16 : 13,
+          gap: kind === "gondola" ? 60 : 26,
+          speed: kind === "gondola" ? 3.2 : 2.2,
+          nCab: kind === "gondola" ? 3 : 0
+        });
+        wCur = wBase + rr(450, 850);
+      }
+      /* ELEVADOR PRINCIPAL: no Mundo Aberto nao existe "chegada" - o
+         fundo do vale e um TERMINAL GIGANTE que atravessa o vale e
+         devolve todo mundo (jogador E bots) ao topo: subida
+         obrigatoria, num loop infinito de descida */
+      c.resort.lifts.push({ type: "gondola", grand: true, s0: 380,
+                            s1: c.length - 95, side: -1, off: 6,
+                            gap: 60, speed: 3.2, nCab: 3 });
+      c.grandLift = c.resort.lifts[c.resort.lifts.length - 1];
+    } else {
     // cadeirinha ao longo da pista (lado +1: oposto ao chalet do meio);
     // cursos curtos (Estilo) usam trechos menores
     var shortC = c.length < 1600;
@@ -1068,6 +1433,7 @@ function buildCourse(mode, diff, seed, P, safeMode){
       c.resort.lifts.push({ type: "gondola", s0: gS0, s1: gS1, side: -1, off: 16,
                             gap: 60, speed: 3.2, nCab: 3 });
     }
+    }
     /* hitboxes da estacao: placas, chalets e torres de teleferico
        (liftX fica em 04-bake; roda antes de qualquer makeCourse) */
     for (var i = 0; i < c.resort.signs.length; i++){
@@ -1083,14 +1449,36 @@ function buildCourse(mode, diff, seed, P, safeMode){
     }
     for (var li = 0; li < c.resort.lifts.length; li++){
       var L = c.resort.lifts[li];
-      c.obstacles.push({ id: idc++, s: L.s0, x: liftX(L, c, L.s0),
-                         r: 0, hx: 2.6, hs: 2.6, t: "station", sc: 1, rot: 0, h: 9.3 });
-      for (var ts = L.s0 + 55; ts < L.s1 - 10; ts += 55){
+      /* hitbox em TRES caixas por estacao, alinhadas ao que se ve: o
+         predio de servicos (baixo, da pra pular por cima) + os DOIS
+         postes do portal. O VAO CENTRAL fica livre - antes uma caixa
+         unica de 9.3 m de altura crashava quem passava entre os postes */
+      var pOff = L.type === "gondola" ? 3.9 : 2.6;
+      for (var es2 = 0; es2 < 2; es2++){
+        var sSt = es2 === 0 ? L.s0 : L.s1;
+        var xSt = liftX(L, c, sSt);
+        c.obstacles.push({ id: idc++, s: sSt, x: xSt,
+                           r: 0, hx: 2.5, hs: 2.5, t: "station", sc: 1, rot: 0, h: 3.9 });
+        for (var ps = -1; ps <= 1; ps += 2){
+          c.obstacles.push({ id: idc++, s: sSt, x: xSt + ps * pOff,
+                             r: 0, hx: 0.20, hs: 0.18, t: "station", sc: 1, rot: 0, h: 9.3 });
+        }
+      }
+      /* MESMA formula das torres VISUAIS (bakeLiftStatics): antes o
+         hitbox usava s0+55, s0+110... e a torre visivel ficava em
+         outro lugar - colisao INVISIVEL ao esquiar "do lado" de uma
+         torre que nao existia ali */
+      for (var ts = Math.ceil((L.s0 + 25) / 55) * 55; ts <= L.s1 - 25; ts += 55){
         c.obstacles.push({ id: idc++, s: ts, x: liftX(L, c, ts),
                            r: 0.6, t: "tower", sc: 1, rot: 0, h: 8.9 });
       }
-      c.obstacles.push({ id: idc++, s: L.s1, x: liftX(L, c, L.s1),
-                         r: 0, hx: 2.6, hs: 2.6, t: "station", sc: 1, rot: 0, h: 9.3 });
+      /* salao TERMINAL do elevador principal: caixa unica que fecha o
+         vale inteiro (a fachada de vidro do terminal gigante) */
+      if (L.grand){
+        c.obstacles.push({ id: idc++, s: L.s1, x: trackX(c, L.s1),
+                           r: 0, hx: trackW(c, L.s1) + 9, hs: 5.0,
+                           t: "hall", sc: 1, rot: 0, h: 5.2 });
+      }
     }
   }
   /* delineadores de borda (so Corrida Livre): pares de bandeirinhas macias
@@ -1286,9 +1674,15 @@ var TUT_SEGS = {
    voo; gates: cobre os 3 primeiros portais com margem; choke: 90m de
    embalada + zona de 78m + saida com folga. */
 var TUT_SPAN = { ramp: 125, gates: 240, choke: 200 };
+/* partida do tutorial ADIANTADA para dentro da pista: o painel de
+   boas-vindas congela o mundo ANTES do primeiro updateCamera - com a
+   partida antiga (s=12) a camera nascia no padrao [0,5,8], fora do
+   inicio da malha, e o primeiro frame mostrava area sem pista nem
+   geometria. Aqui o jogador entra no miolo da pista. */
+var TUT_START_S = 60;
 var TUT_STEPS = [
   { id: "welcome", kind: "panel", mode: "panel",
-    goal: "<b>Bem-vindo ao NEVADA!</b><br>Esta &#233; a <b>pista de treino</b>: inclina&#231;&#227;o suave e jogo paus\u00e1vel, sem pressa. Voc&#234; vai aprender os controles, os truques a&#233;reos e provar os <b>3 modos de jogo</b>, um por vez.<br><span class='tuthint'>Aperte <kbd>Enter</kbd> ou clique em Continuar</span>",
+    goal: "<b>Bem-vindo ao NEVADA!</b><br>Esta &#233; a <b>pista de treino</b>: inclina&#231;&#227;o suave e jogo paus\u00e1vel, sem pressa. Voc&#234; vai aprender os controles, os truques a&#233;reos e provar os <b>4 modos de jogo</b>, um por vez.<br><span class='tuthint'>Aperte <kbd>Enter</kbd> ou clique em Continuar</span>",
     check: function(){ return false; } },
   { id: "turnL", kind: "action", mode: "train",
     goal: "Segure <kbd>A</kbd> (ou &#8592;) e vire para a <b>ESQUERDA</b>",
@@ -1321,7 +1715,9 @@ var TUT_STEPS = [
     check: function(st, inp, ev, aux){
       for (var i = 0; i < ev.length; i++){
         if (ev[i].type === "jump" && ev[i].manual) aux.j = 1;
-        if (ev[i].type === "land" && aux.j && (ev[i].airTime || 0) > 0.25) aux.ok = 1;
+        /* limiar de voo escala com a intensidade do pulo (jumpScale):
+           salto manual a 25% dura ~0.13 s, entao 0.25 s cravado travaria o passo */
+        if (ev[i].type === "land" && aux.j && (ev[i].airTime || 0) > 0.25 * PHYS.jumpScale) aux.ok = 1;
       }
       return !!aux.ok;
     } },
@@ -1375,8 +1771,11 @@ var TUT_STEPS = [
     check: function(st, inp, ev, aux){
       return tutLandedWith(aux, ev, function(e){ return e.airTime > 0.7 && e.ramp; });
     } },
+  { id: "p-world", kind: "panel", mode: "panel",
+    goal: "<b>B&#212;NUS &#8212; MUNDO ABERTO</b><br>No menu, escolha <b>Mundo Aberto</b>: um vale inteiro s&#243; seu, sem chegada e sem cron&#244;metro. Des&#231;a por onde quiser &#8212; as <b>placas</b> apontam bowls e <b>trilhas que bifurcam</b> da pista principal. No fundo do vale fica o <b>terminal gigante</b>: chegou l&#225;, a g&#244;ndola principal embarca voc&#234; sozinha e devolve voc&#234; ao topo &#8212; aperte <kbd>F</kbd> para <b>acelerar a subida</b>.",
+    check: function(){ return false; } },
   { id: "done", kind: "panel", mode: "panel",
-    goal: "<b>TUTORIAL CONCLU&#205;DO!</b><br>Voc&#234; domina os controles, os truques a&#233;reos e conhece os <b>3 modos</b>. Boa descida!",
+    goal: "<b>TUTORIAL CONCLU&#205;DO!</b><br>Voc&#234; domina os controles, os truques a&#233;reos e conhece os <b>4 modos</b>. Boa descida!",
     check: function(){ return false; } }
 ];
 function tutStepDone(i, st, inp, ev, aux){
@@ -1451,7 +1850,7 @@ function newSkierState(c){
     vx: 0, vz: -2.5, vy: 0, groundVy: 0, prevGh: heightAt(c, x0, s0),
     yaw: 0, grounded: true, airTime: 0,
     crashT: 0, stumbleT: 0, jumpCd: 0, jumpPrev: false,
-    spinAcc: 0, grabT: 0, onRampJump: false, airApex: 0,
+    spinAcc: 0, grabT: 0, onRampJump: false, airApex: 0, burnT: 0,
     flipOn: false, flipType: null, flipT: 0, flipDeg: 0, flipTarget: 0,
     prevS: s0, dist: 0, maxSpeed: 0, speed: 2.5,
     gateIdx: 0, finished: false, dnf: false, offT: 0,
@@ -1518,7 +1917,7 @@ function physStep(st, inp, c, dt){
   var jumpedThisTick = false;
   if (inp.jump && !st.jumpPrev){
     if (st.grounded && speed >= PHYS.jumpMinSpeed && st.jumpCd <= 0){
-      st.vy = PHYS.jumpVel + speed * 0.013;
+      st.vy = (PHYS.jumpVel + speed * 0.013) * PHYS.jumpScale * TUT_JUMP_BOOST;
       st.grounded = false; st.airTime = 0; st.jumpCd = PHYS.jumpCooldown;
       st.spinAcc = 0; st.grabT = 0; st.airApex = 0;
       st.onRampJump = rampH(c, st.x, st.s) > 0.25;
@@ -1603,11 +2002,24 @@ function physStep(st, inp, c, dt){
     if (dragDec >= speed){ st.vx = 0; st.vz = 0; }
     else { st.vx -= st.vx / speed * dragDec; st.vz -= st.vz / speed * dragDec; }
   }
-  /* teto tecnico de seguranca */
+  /* SEM teto de velocidade: declive x arrasto decidem o maximo.
+     Acima de 400 km/h o atrito do ar ACENDE o esquiador/snowboarder:
+     um instante em chamas e o equipamento EXPLODE - corrida encerrada
+     na hora. Vale para o jogador E para os bots (mesma fisica). */
   speed = Math.hypot(st.vx, st.vz);
-  if (speed > PHYS.speedMax){
-    var sc = PHYS.speedMax / speed;
-    st.vx *= sc; st.vz *= sc; speed = PHYS.speedMax;
+  if (speed > PHYS.burnSpeed){
+    st.burnT = (st.burnT || 0) + dt;
+    if (st.burnT >= PHYS.burnFuse){
+      st.crashT = PHYS.crashTime * 2;
+      st.crashes++;
+      st.vx *= 0.02; st.vz *= 0.02; speed = Math.hypot(st.vx, st.vz);
+      ev.push({ type: "explode", cause: "speed" });
+      /* bots (gateIdx alto) sao cenario: explodem e a reciclagem cuida;
+         o JOGADOR tem a descida encerrada imediatamente */
+      if (!st.finished && !st.dnf && st.gateIdx < 1e8) st.dnf = true;
+    }
+  } else if (st.burnT){
+    st.burnT = Math.max(0, st.burnT - dt * 2);   // saiu dos 400: esfria
   }
 
   /* --- integracao horizontal --- */
@@ -1621,7 +2033,7 @@ function physStep(st, inp, c, dt){
       // o chao desapareceu: lancamento natural (crista/rampa).
       // agachado (W/tuck) absorve: cola no declive em vez de decolar
       st.grounded = false;
-      st.vy = clamp(st.groundVy, 0, 18);
+      st.vy = Math.min(9, clamp(st.groundVy, 0, 18) * PHYS.jumpScale * TUT_JUMP_BOOST);
       st.airTime = 0;
       st.spinAcc = 0; st.grabT = 0; st.airApex = 0;
       st.flipOn = false; st.flipType = null; st.flipT = 0; st.flipDeg = 0; st.flipTarget = 0;
@@ -1633,7 +2045,7 @@ function physStep(st, inp, c, dt){
       // crista da rampa a frente: levitacao natural com a velocidade que
       // ja vem da subida (agachado absorve e segue colado)
       st.grounded = false;
-      st.vy = clamp(st.groundVy, 0, 18);
+      st.vy = Math.min(9, clamp(st.groundVy, 0, 18) * PHYS.jumpScale * TUT_JUMP_BOOST);
       st.airTime = 0;
       st.spinAcc = 0; st.grabT = 0; st.airApex = 0;
       st.flipOn = false; st.flipType = null; st.flipT = 0; st.flipDeg = 0; st.flipTarget = 0;
@@ -1743,6 +2155,24 @@ function physStep(st, inp, c, dt){
           if (st.grounded) st.y = heightAt(c, st.x, st.s);
           continue;
         }
+        if (o.t === "crowd"){
+          /* TORCEDOR nao e parede: esbarrar so empurra de volta e
+             segura o ritmo, como colidir com outro esquiador
+             (redirecionamento leve + perda de velocidade). Sem queda,
+             tropeco, penalidade ou colisao no placar. Um evento por
+             espectador por descida; a separacao continua rodando tick
+             a tick no bloco acima. */
+          if (!st.colSet[o.id]){
+            st.colSet[o.id] = 1;
+            var vDotC = st.vx * nx + st.vz * nz;
+            st.vx *= 0.62; st.vz *= 0.62;
+            if (vDotC < 0){ st.vx -= 1.3 * vDotC * nx; st.vz -= 1.3 * vDotC * nz; }
+            ev.push({ type: "crowdbump", ob: o.t });
+          }
+          if (st.grounded) st.y = heightAt(c, st.x, st.s);
+          speed = Math.hypot(st.vx, st.vz);
+          continue;
+        }
         var vDot = st.vx * nx + st.vz * nz;
         var impact = 0;
         if (vDot < 0){
@@ -1806,8 +2236,13 @@ function physStep(st, inp, c, dt){
     if (st.offT > 7 && !st.finished && st.gateIdx < 1e8){ st.dnf = true; ev.push({ type: "dnf" }); }
   }
 
-  /* --- chegada --- */
-  if (st.s >= c.length && !st.finished){
+  /* --- fim do vale (Mundo Aberto): o limite e o TERMINAL do elevador
+     principal - a fisica para na fachada do salao gigante, nao numa
+     linha invisivel. O embarque obrigatorio roda no stepGame. --- */
+  if (c.mode === "world"){
+    var sEndW = c.grandLift ? c.grandLift.s1 - 8 : c.length - 1;
+    if (st.s > sEndW){ st.s = sEndW; st.z = -st.s; }
+  } else if (st.s >= c.length && !st.finished){
     st.finished = true;
     ev.push({ type: "finish" });
   }
@@ -2009,7 +2444,8 @@ function defaultSave(){
     v: 1,
     tutDone: false,   // tutorial concluido ou pulado: nao abrir sozinho de novo
     settings: { quality: "med", volume: 70, muted: false, cam: "chase",
-                mode: "slalom", diff: "med", track: "fixed" },
+                mode: "slalom", diff: "med", track: "fixed",
+                gear: "ski", skin: 0 },
     records: {}   // chave "mode.diff.track" -> {score, time, dist}
   };
 }
@@ -2026,6 +2462,9 @@ function sanitizeSave(o){
   s.settings.mode = pick(st.mode, ["slalom", "free", "endurance"], "slalom");
   s.settings.diff = pick(st.diff, ["easy", "med", "hard", "extremo"], "med");
   s.settings.track = pick(st.track, ["fixed", "rand"], "fixed");
+  s.settings.gear = pick(st.gear, ["ski", "board"], "ski");
+  var skn = Number(st.skin);
+  s.settings.skin = isFinite(skn) ? clamp(Math.round(skn), 0, PLAYER_SKINS.length - 1) : 0;
   var vol = Number(st.volume); s.settings.volume = isFinite(vol) ? clamp(Math.round(vol), 0, 100) : 70;
   s.settings.muted = !!st.muted;
   s.tutDone = !!o.tutDone;
@@ -2187,7 +2626,7 @@ function bakeRock(G, o, x, y, z){
       var sy = (c & 2 ? 1 : 0.12) * h * (0.85 + rr() * 0.25);
       var sz = (c & 4 ? 1 : -1) * d / 2 * (0.82 + rr() * 0.3);
       var rx = sx * cr - sz * sr, rz = sx * sr + sz * cr;
-      pts.push([cx + rx + jx, cy + sy - h * 0.42, cz + rz + jz]);
+      pts.push([cx + rx + jx, cy + sy - h * 0.18, cz + rz + jz]);
     }
     var faces = [
       [0,1,3,2, [0,0,1]], [4,6,7,5, [0,0,-1]], [0,2,6,4, [-1,0,0]],
@@ -2204,15 +2643,18 @@ function bakeRock(G, o, x, y, z){
     }
   }
   var r0 = o.r;
-  rockBox(x, y, z, r0 * 2.1, r0 * 0.8, r0 * 1.75, col, col2, 0, 0);
-  rockBox(x + (rr() - 0.5) * r0 * 0.7, y + r0 * 0.62, z + (rr() - 0.5) * r0 * 0.7,
-          r0 * 1.3, r0 * 0.7, r0 * 1.05, col2, col, 0, 0);
+  /* pedras de verdade: bloco ALTO e pouco enterrado (18%) - antes
+     42% da altura ficava sob a neve e as pedras pequenas quase
+     desapareciam no terreno */
+  rockBox(x, y, z, r0 * 2.1, r0 * 1.0, r0 * 1.75, col, col2, 0, 0);
+  rockBox(x + (rr() - 0.5) * r0 * 0.7, y + r0 * 0.72, z + (rr() - 0.5) * r0 * 0.7,
+          r0 * 1.3, r0 * 0.85, r0 * 1.05, col2, col, 0, 0);
   // tampa de neve no topo do bloco superior
   var sx2 = (rr() - 0.5) * r0 * 0.5, sz2 = (rr() - 0.5) * r0 * 0.5;
-  quadN(G, x - r0 * 0.9 + sx2, y + r0 * 1.26, z - r0 * 0.75 + sz2,
-            x + r0 * 0.95 + sx2, y + r0 * 1.26, z - r0 * 0.75 + sz2,
-            x + r0 * 0.9 + sx2, y + r0 * 1.32, z + r0 * 0.7 + sz2,
-            x - r0 * 0.92 + sx2, y + r0 * 1.32, z + r0 * 0.72 + sz2, snow, snow);
+  quadN(G, x - r0 * 0.9 + sx2, y + r0 * 1.38, z - r0 * 0.75 + sz2,
+            x + r0 * 0.95 + sx2, y + r0 * 1.38, z - r0 * 0.75 + sz2,
+            x + r0 * 0.9 + sx2, y + r0 * 1.44, z + r0 * 0.7 + sz2,
+            x - r0 * 0.92 + sx2, y + r0 * 1.44, z + r0 * 0.72 + sz2, snow, snow);
 }
 /* arvore conifera nevada: tronco com base larga + 4 camadas assimetricas
    com saias de neve - silhueta de pinheiro alpino carregado de neve */
@@ -2394,6 +2836,130 @@ function liftCableY(L, c, s){
   var f = (s - L.s0) / 55 - Math.floor((s - L.s0) / 55);
   return base - Math.sin(Math.PI * f) * (L.type === "gondola" ? 1.6 : 1.1);
 }
+/* --- telefericos interativos (Mundo Aberto) ---
+   Os carriers circulam por fase sobre o cabo (mesma formula do
+   drawLiftDyn): embarcar e ancorar o jogador a um carrier REAL do
+   cabo que sobe (lado dir = -1, indice impar), entao a cadeirinha/
+   cabine desenhada pelo jogo e exatamente a que o jogador ocupa. */
+function liftCarrierPos(L, c, i, t){
+  var span = L.s1 - L.s0;
+  var dir = (i % 2 === 0) ? 1 : -1;
+  /* off lateral GENEROSO: os carriers passam ao LADO dos pilares (meia
+     largura 0.22) e NUNCA atravessam o carrier oposto - antes as
+     cabinas se interpenetravam no cruzamento */
+  var off = (i % 2 === 0) ? -1.15 : 1.15;
+  if (L.type === "gondola") off = (i % 2 === 0) ? -1.85 : 1.85;
+  var s = L.s0 + (((t * L.speed * dir) + i * L.gap * 2) % span + span) % span;
+  return { s: s, x: liftX(L, c, s) + off, y: liftCableY(L, c, s), off: off, dir: dir };
+}
+function liftUpCount(L){
+  return Math.max(2, Math.floor((L.s1 - L.s0) / L.gap));
+}
+/* pode embarcar? perto da estacao de BASE (fundo do vale, s1), no chao
+   e devagar - como num teleferico de verdade */
+function liftBoardable(c, st){
+  if (!c.resort || !c.resort.lifts.length || !st) return null;
+  if (st.speed > 7 || !st.grounded || st.crashT > 0) return null;
+  for (var i = 0; i < c.resort.lifts.length; i++){
+    var L = c.resort.lifts[i];
+    var bx = liftX(L, c, L.s1), bz = -L.s1;
+    if (Math.hypot(st.x - bx, st.z - bz) < 9) return L;
+  }
+  return null;
+}
+/* --- terminal GIGANTE do elevador principal (Mundo Aberto) ---
+   salao que ATRAVESSA o vale de lado a lado: cortina de vidro com
+   montantes e panes "acesas" (interior quente visivel), clerestorio
+   entre dois niveis de teto com coroa de neve, marquise de embarque
+   com pilares e luminarias, portal central de pedra, faixa de
+   sinalizacao e torres de canto com farol. Na linha do cabo fica o
+   portal padrao da gondola, desenhado pelo codigo normal de estacao. */
+function bakeGrandHall(G, L, c){
+  var sB = L.s1;
+  var halfW = trackW(c, sB) + 7;
+  var cxT = trackX(c, sB);
+  var glass = [0.45, 0.72, 0.90], glass2 = [0.70, 0.88, 1.00];
+  var litA = [1.00, 0.87, 0.58], litB = [1.00, 0.78, 0.42];  // interior aceso
+  var wall = [0.50, 0.55, 0.62], wall2 = [0.62, 0.66, 0.74];
+  var dark = [0.16, 0.17, 0.22];
+  var roof = [0.88, 0.90, 0.95], roof2 = [0.95, 0.97, 1.00];
+  var snowC = [0.93, 0.95, 0.99];
+  var stone = [0.58, 0.56, 0.53], stone2 = [0.69, 0.67, 0.63];
+  var accent = [0.95, 0.45, 0.12], accent2 = [1.00, 0.62, 0.20];
+  var canopy = [0.82, 0.86, 0.92], canopy2 = [0.90, 0.93, 0.97];
+  var H1 = 5.2, H2 = 7.4;               // pe direito e topo do clerestorio
+  var segN = 18;
+  for (var si = 0; si < segN; si++){
+    var xa = cxT - halfW + (si / segN) * 2 * halfW;
+    var xb = cxT - halfW + ((si + 1) / segN) * 2 * halfW;
+    var ya = heightAt(c, xa, sB), yb = heightAt(c, xb, sB);
+    /* fachada: paineis de vidro alternando com panes QUENTES acesas -
+       de longe o salao parece um predio vivo, nao uma parede azul */
+    var lit = (si % 3) === 1;
+    var gA = lit ? litA : glass, gB = lit ? litB : glass2;
+    quadN(G, xa, ya, -(sB - 7), xb, yb, -(sB - 7),
+             xb, yb + H1, -(sB - 7), xa, ya + H1, -(sB - 7), gA, gB);
+    /* clerestorio: faixa de vidro entre os dois niveis de teto */
+    quadN(G, xa, ya + H1, -(sB - 7), xb, yb + H1, -(sB - 7),
+             xb, yb + H2, -(sB - 7), xa, ya + H2, -(sB - 7), glass, glass2);
+    /* parede de tras fecha o salao ate o teto alto */
+    quadN(G, xb, yb, -(sB + 4), xa, ya, -(sB + 4),
+             xa, ya + H2, -(sB + 4), xb, yb + H2, -(sB + 4), wall, wall2);
+    /* dois niveis de teto + coroa de neve dupla */
+    quadN(G, xa, ya + H1 + 0.4, -(sB - 8), xb, yb + H1 + 0.4, -(sB - 8),
+             xb, yb + H1 + 0.4, -(sB + 5), xa, ya + H1 + 0.4, -(sB + 5), roof, roof2);
+    quadN(G, xa, ya + H2 + 0.4, -(sB - 7.6), xb, yb + H2 + 0.4, -(sB - 7.6),
+             xb, yb + H2 + 0.4, -(sB + 4.6), xa, ya + H2 + 0.4, -(sB + 4.6), roof, roof2);
+    quadN(G, xa, ya + H2 + 0.4, -(sB - 7.6), xb, yb + H2 + 0.4, -(sB - 7.6),
+             xb, yb + H2 + 0.95, -(sB + 4.6), xa, ya + H2 + 0.95, -(sB + 4.6), snowC, snowC);
+    /* marquise de embarque: teto inclinado avancando para a pista */
+    quadN(G, xa, ya + H1 - 0.9, -(sB - 7), xb, yb + H1 - 0.9, -(sB - 7),
+             xb, yb + H1 - 0.45, -(sB - 15), xa, ya + H1 - 0.45, -(sB - 15),
+             canopy, canopy2);
+  }
+  /* montantes verticais da cortina de vidro (trelicca da fachada) */
+  for (var pi2 = 0; pi2 <= segN; pi2++){
+    var xp = cxT - halfW + (pi2 / segN) * 2 * halfW;
+    var yp = heightAt(c, xp, sB);
+    bakePrism(G, xp, yp, -(sB - 7), 0.5, 0.5, 0.34, 0.34, H2 + 0.4, dark, wall);
+  }
+  /* pilares da marquise + luminarias quentes penduradas */
+  for (var ci2 = 0; ci2 <= segN; ci2 += 2){
+    var xs = cxT - halfW + (ci2 / segN) * 2 * halfW;
+    var yq = heightAt(c, xs, sB - 15);
+    var topY = heightAt(c, xs, sB) + H1 - 0.6;
+    bakePrism(G, xs, yq, -(sB - 15), 0.34, 0.34, 0.26, 0.26,
+               Math.max(topY - yq, 0.5), dark, dark);
+    if (ci2 % 4 === 0)
+      bakePrism(G, xs, topY - 0.75, -(sB - 10.5), 0.42, 0.42, 0.34, 0.34, 0.5,
+                litA, litB);
+  }
+  /* portal central: pilastras gemeas + verga de pedra */
+  var pwid = Math.min(7, halfW * 0.05);
+  var yPL = heightAt(c, cxT - pwid - 1.6, sB);
+  bakePrism(G, cxT - pwid - 1.6, yPL, -(sB - 7.4), 1.0, 1.0, 0.85, 0.85,
+             H2 + 1.4, stone, stone2);
+  bakePrism(G, cxT + pwid + 1.6, heightAt(c, cxT + pwid + 1.6, sB), -(sB - 7.4),
+             1.0, 1.0, 0.85, 0.85, H2 + 1.4, stone, stone2);
+  bakePrism(G, cxT, heightAt(c, cxT, sB) + H2 + 1.4, -(sB - 7.4),
+            pwid + 2.8, 1.1, pwid + 2.6, 0.95, 0.9, stone2, stone);
+  /* faixa de sinalizacao acesa atravessando a fachada */
+  var ym = heightAt(c, cxT, sB);
+  quadN(G, cxT - halfW * 0.55, ym + H1 + 1.3, -(sB - 7.1),
+           cxT + halfW * 0.55, ym + H1 + 1.3, -(sB - 7.1),
+           cxT + halfW * 0.55, ym + H1 + 2.7, -(sB - 7.1),
+           cxT - halfW * 0.55, ym + H1 + 2.7, -(sB - 7.1), accent, accent2);
+  /* torres de canto com faixa, coroa de neve e farol aceso */
+  var towerX = [cxT - halfW + 0.9, cxT + halfW - 0.9];
+  for (var ti2 = 0; ti2 < 2; ti2++){
+    var xt = towerX[ti2];
+    var yt = heightAt(c, xt, sB - 5.5);
+    bakePrism(G, xt, yt, -(sB - 5.5), 2.5, 7.0, 2.1, 6.0, H2 + 3.0, stone, stone2);
+    bakePrism(G, xt, yt + H2 + 1.4, -(sB - 5.5), 2.7, 7.2, 2.2, 6.2, 0.35, accent, accent2);
+    bakePrism(G, xt, yt + H2 + 3.0, -(sB - 5.5), 2.8, 7.4, 2.3, 6.4, 0.8, snowC, snowC);
+    bakePrism(G, xt, yt + H2 + 3.8, -(sB - 5.5), 0.55, 0.55, 0.42, 0.42, 0.6, litA, litB);
+  }
+}
 function bakeLiftStatics(G, L, c, s0, s1){
   var steel = [0.16, 0.17, 0.22], steel2 = [0.24, 0.26, 0.32];
   var conc = [0.55, 0.56, 0.60], conc2 = [0.63, 0.64, 0.68];
@@ -2415,36 +2981,41 @@ function bakeLiftStatics(G, L, c, s0, s1){
     var es = e === 0 ? L.s0 : L.s1;
     if (es < s0 - 20 || es > s1 + 20) continue;
     var ex = liftX(L, c, es), ey = heightAt(c, ex, es), ez = -es;
+    /* portal largo o bastante para a cabine passar por dentro sem
+       tocar os postes (cabine larga + separacao dupla do cabo) */
+    var cw = L.type === "gondola" ? 1.85 : 1.15;
+    var pOff = L.type === "gondola" ? 3.9 : 2.6;
     // caixa de servicos + portal de ferro com caixas de polias no topo
     bakePrism(G, ex, ey, ez, 5.0, 5.0, 4.6, 4.6, 3.8, [0.78, 0.80, 0.85], [0.85, 0.87, 0.92]);
-    bakePrism(G, ex - 2.2, ey, ez, 0.34, 0.34, 0.28, 0.28, 9.3, steel, steel2);
-    bakePrism(G, ex + 2.2, ey, ez, 0.34, 0.34, 0.28, 0.28, 9.3, steel, steel2);
-    bakePrism(G, ex, ey + 8.75, ez, 2.7, 0.5, 2.5, 0.42, 0.55, steel2, steel);
-    bakePrism(G, ex - 0.85, ey + 8.15, ez, 0.55, 0.75, 0.45, 0.65, 1.05, [0.20, 0.21, 0.26], [0.30, 0.31, 0.38]);
-    bakePrism(G, ex + 0.85, ey + 8.15, ez, 0.55, 0.75, 0.45, 0.65, 1.05, [0.20, 0.21, 0.26], [0.30, 0.31, 0.38]);
-    bakePrism(G, ex, ey + 3.8, ez, 5.6, 5.0, 5.2, 4.4, 0.35, [0.90, 0.93, 0.97], [0.94, 0.96, 0.99]);   // marquise
+    bakePrism(G, ex - pOff, ey, ez, 0.34, 0.28, 0.30, 0.26, 9.3, steel, steel2);
+    bakePrism(G, ex + pOff, ey, ez, 0.34, 0.28, 0.30, 0.26, 9.3, steel, steel2);
+    bakePrism(G, ex, ey + 8.75, ez, pOff * 2 + 0.2, 0.5, pOff * 2, 0.42, 0.55, steel2, steel);
+    bakePrism(G, ex - (cw + 0.35), ey + 8.15, ez, 0.55, 0.75, 0.45, 0.65, 1.05, [0.20, 0.21, 0.26], [0.30, 0.31, 0.38]);
+    bakePrism(G, ex + (cw + 0.35), ey + 8.15, ez, 0.55, 0.75, 0.45, 0.65, 1.05, [0.20, 0.21, 0.26], [0.30, 0.31, 0.38]);
+    bakePrism(G, ex, ey + 3.8, ez, pOff * 2 + 0.7, 5.0, pOff * 2 + 0.3, 4.4, 0.35, [0.90, 0.93, 0.97], [0.94, 0.96, 0.99]);   // marquise
   }
-  // cabo: DUAS CORDAS FINAS (subida/descida) com leve catenaria, nos pontos
-  // exatos onde cadeirinhas/gondolas circulam (off +-0.55/+-0.9).
-  // Antes era uma FITA larga de 1,1-1,8 m que serpenteava por dentro da
-  // floresta como uma banda gigante; e cada chunk redesenhava a fita com
-  // grade propria (margem de 12 m), gerando sobreposicao desalinhada e
-  // z-fighting nas costuras. Grade agora alinhada ao curso: cada segmento
-  // pertence a exatamente um chunk.
-  var cw = L.type === "gondola" ? 0.9 : 0.55;   // separacao entre as cordas
-  var tw = L.type === "gondola" ? 0.09 : 0.06;  // meia-largura de cada corda
-  var prev = null;
-  for (var cs = Math.ceil(Math.max(L.s0, s0) / 4) * 4; cs + 4 <= Math.min(L.s1, s1); cs += 4){
-    var cx = liftX(L, c, cs), cy = liftCableY(L, c, cs), cz = -cs;
-    if (prev){
-      for (var sd = -1; sd <= 1; sd += 2){
-        quadN(G, prev[0] + sd * (cw - tw), prev[1], prev[2],
-                  cx + sd * (cw - tw), cy, cz,
-                  cx + sd * (cw + tw), cy, cz,
-                  prev[0] + sd * (cw + tw), prev[1], prev[2], cable, cable);
-      }
+  /* salao gigante do terminal (so elevador principal, na base do vale) */
+  if (L.grand && L.s1 >= s0 - 30 && L.s1 <= s1 + 30) bakeGrandHall(G, L, c);
+  // cabo: DUAS CORDAS em TUBO 3D fininho (visivel de qualquer angulo) nos
+  // pontos exatos onde cadeirinhas/gondolas circulam (off +-1.15/+-1.85).
+  // Antes era uma fita plana de face unica (quadN com normal para cima):
+  // vista de lado ou de baixo - exatamente o angulo de quem esta na
+  // cadeirinha - o cabo SUMIA, parecendo interrompido. Grade alinhada ao
+  // curso: cada segmento pertence a exatamente um chunk.
+  var cw2 = L.type === "gondola" ? 1.85 : 1.15;   // separacao entre as cordas
+  var cr2 = 0.065;                                // meia-largura do tubo
+  var cable = [0.09, 0.09, 0.11];
+  for (var cs = Math.ceil(Math.max(L.s0, s0) / 8) * 8; cs + 8 <= Math.min(L.s1, s1); cs += 8){
+    var c1x = liftX(L, c, cs),     c1y = liftCableY(L, c, cs),     c1z = -cs;
+    var c2x = liftX(L, c, cs + 8), c2y = liftCableY(L, c, cs + 8), c2z = -(cs + 8);
+    for (var sd = -1; sd <= 1; sd += 2){
+      var ax1 = c1x + sd * cw2, ax2 = c2x + sd * cw2;
+      // 4 faces do tubo: topo, baixo e os dois lados
+      quadN(G, ax1 - cr2, c1y + cr2, c1z, ax2 - cr2, c2y + cr2, c2z, ax2 + cr2, c2y + cr2, c2z, ax1 + cr2, c1y + cr2, c1z, cable, cable);
+      quadN(G, ax1 + cr2, c1y - cr2, c1z, ax2 + cr2, c2y - cr2, c2z, ax2 - cr2, c2y - cr2, c2z, ax1 - cr2, c1y - cr2, c1z, cable, cable);
+      quadN(G, ax1 - cr2, c1y - cr2, c1z, ax2 - cr2, c2y - cr2, c2z, ax2 - cr2, c2y + cr2, c2z, ax1 - cr2, c1y + cr2, c1z, cable, cable);
+      quadN(G, ax1 + cr2, c1y - cr2, c1z, ax1 + cr2, c1y + cr2, c1z, ax2 + cr2, c2y + cr2, c2z, ax2 + cr2, c2y - cr2, c2z, cable, cable);
     }
-    prev = [cx, cy, cz];
   }
 }
 
@@ -2456,15 +3027,29 @@ function buildChunkMesh(c, ci, qOpts){
 
   // faixa lateral necessaria
   var xmin = 1e9, xmax = -1e9;
+  /* MUNDO ABERTO: faixa lateral 150 m (o paredao externo do heightAt
+     fica INTEIRO dentro do mesh; nos outros modes 76 m basta) */
+  var ext = c.mode === "world" ? 150 : 76;
   for (var s = s0; s <= s1 + 2; s += 8){
     var tx = trackX(c, s), w = trackW(c, s);
-    if (tx - w - 76 < xmin) xmin = tx - w - 76;
-    if (tx + w + 76 > xmax) xmax = tx + w + 76;
+    if (tx - w - ext < xmin) xmin = tx - w - ext;
+    if (tx + w + ext > xmax) xmax = tx + w + ext;
   }
   var xStep = qOpts.xStep || 4, sStep = qOpts.sStep || 2.5;
   var nx = Math.ceil((xmax - xmin) / xStep) + 1;
   var nz = Math.ceil(CHUNK_LEN / sStep) + 1;
   if (nx * nz > 65000) { nx = Math.min(nx, 200); }
+
+  /* cores dos NIVEIS de rampa (azul / verde / laranja / vermelha):
+     a mesma paleta das bandeirinhas de borda - reusada nas faixas
+     pintadas na neve da propria rampa, mais abaixo */
+  var TIER_COL = [[0.15, 0.55, 0.95], [0.10, 0.75, 0.30], [0.98, 0.55, 0.08], [0.94, 0.12, 0.10]];
+  // rampas que cruzam este chunk (para as faixas de sinalizacao)
+  var rampNear = [];
+  for (var rri = 0; rri < c.ramps.length; rri++){
+    var R0 = c.ramps[rri];
+    if (R0.s + 3 > s0 && R0.s - R0.len - 3 < s1) rampNear.push(R0);
+  }
 
   var groom = [0.955, 0.972, 0.995];
   var snow  = [0.885, 0.915, 0.965];
@@ -2515,6 +3100,22 @@ function buildChunkMesh(c, ci, qOpts){
           var ddx = x - A.x, dds = s - A.s;
           if (ddx * ddx + dds * dds < 9){ r *= 0.88; gg *= 0.88; b *= 0.90; break; }
         }
+      }
+      /* FAIXAS DE SINALIZACAO na neve da rampa: bandas transversais ao
+         pe da subida, na COR DO NIVEL de dificuldade - o jogador le o
+         nivel (azul/verde/laranja/vermelha) antes de decolar. Pintura
+         suave sobre a neve com fade nas bordas, como nos parks reais. */
+      for (var rj = 0; rj < rampNear.length; rj++){
+        var R1 = rampNear[rj];
+        var uR = (s - (R1.s - R1.len)) / R1.len;
+        if (uR < 0.08 || uR > 0.66 || Math.floor((uR - 0.08) / 0.19) % 2 !== 0) continue;
+        var dxR = (x - R1.x) / R1.w;
+        if (dxR * dxR > 0.85) continue;
+        if (rampH(c, x, s) < 0.12) continue;
+        var tc = TIER_COL[R1.tier] || TIER_COL[0];
+        var kR = 0.7 * (1 - Math.abs(dxR));
+        if (kR <= 0) continue;
+        r = lerp(r, tc[0], kR); gg = lerp(gg, tc[1], kR); b = lerp(b, tc[2], kR);
       }
       row.push(G.vert(x, h, -s, nxv, nyv, nzv, r, gg, b));
     }
@@ -2585,20 +3186,23 @@ function buildChunkMesh(c, ci, qOpts){
     for (var gi = 0; gi < c.gates.length; gi++){
       var gt = c.gates[gi];
       if (gt.s < s0 || gt.s > s1) continue;
-      var yb0 = heightAt(c, gt.x, gt.s) + 1.15, yb1 = yb0 + 1.15;
-      var col = (gi % 2 === 0) ? [0.92, 0.10, 0.12] : [0.10, 0.38, 0.92];
       var hl = c.gateHalf;
+      /* banner acompanha o terreno DE CADA MASTRO (x +/- hl): em pista
+         inclinada de lado o painel unico flutuava sobre o mastro de
+         baixo e engolia o de cima */
+      var yl0 = heightAt(c, gt.x - hl, gt.s) + 1.15;
+      var yr0 = heightAt(c, gt.x + hl, gt.s) + 1.15;
+      var col = (gi % 2 === 0) ? [0.92, 0.10, 0.12] : [0.10, 0.38, 0.92];
       var v0G = G.nverts();
-      quadN(G, gt.x - hl, yb0, -gt.s, gt.x + hl, yb0, -gt.s,
-               gt.x + hl, yb1, -gt.s, gt.x - hl, yb1, -gt.s, col);
-      quadN(G, gt.x + hl, yb0, -gt.s, gt.x - hl, yb0, -gt.s,
-               gt.x - hl, yb1, -gt.s, gt.x + hl, yb1, -gt.s, col);
+      quadN(G, gt.x - hl, yl0, -gt.s, gt.x + hl, yr0, -gt.s,
+               gt.x + hl, yr0 + 1.15, -gt.s, gt.x - hl, yl0 + 1.15, -gt.s, col);
+      quadN(G, gt.x + hl, yr0, -gt.s, gt.x - hl, yl0, -gt.s,
+               gt.x - hl, yl0 + 1.15, -gt.s, gt.x + hl, yr0 + 1.15, -gt.s, col);
       G.setMeta(v0G, G.nverts() - v0G, 2, gi * 0.9 + gt.s * 0.05);   // ondula
     }
   }
 
   /* --- bandeirinhas das rampas: cor/tamanho por NIVEL (K/S/M/L) --- */
-  var TIER_COL = [[0.15, 0.55, 0.95], [0.10, 0.75, 0.30], [0.98, 0.55, 0.08], [0.94, 0.12, 0.10]];
   for (var ri = 0; ri < c.ramps.length; ri++){
     var rp = c.ramps[ri];
     if (rp.s < s0 || rp.s > s1) continue;
@@ -2669,13 +3273,19 @@ function buildChunkMesh(c, ci, qOpts){
       bakeLiftStatics(G, L2, c, s0, s1);
     }
     // postes das placas de trilha (o painel texturizado e desenhado a parte)
+    // nos MESMOS cantos do painel (mesmo angulo/meia-largura do buildSign):
+    // antes eram retos a +/-0.85 m, descolados do painel girado
     for (var sg = 0; sg < c.resort.signs.length; sg++){
       var SG = c.resort.signs[sg];
       if (SG.s < s0 - 8 || SG.s > s1 + 8) continue;
-      var gy = heightAt(c, SG.x, SG.s);
+      var aS = 0.55, hwS = 0.98;
       for (var sp = -1; sp <= 1; sp += 2){
-        bakePrism(G, SG.x + sp * 0.85, gy, -SG.s, 0.10, 0.10, 0.08, 0.08, 2.6,
-                  [0.28, 0.28, 0.33], [0.36, 0.36, 0.42]);
+        var pxS = SG.x + sp * Math.cos(aS) * hwS;
+        var pzS = -SG.s + sp * SG.side * Math.sin(aS) * hwS;
+        var pyS = heightAt(c, pxS, SG.s);
+        var pTopS = pyS + 1.30 + 1.28 + 0.04;   // ate o topo do painel
+        bakePrism(G, pxS, pyS, pzS, 0.10, 0.10, 0.08, 0.08,
+                  pTopS - pyS, [0.28, 0.28, 0.33], [0.36, 0.36, 0.42]);
       }
     }
   }
@@ -2739,7 +3349,8 @@ function buildBackground(c){
 
 /* ================================================================
    Esquiador - modelo detalhado, orientado para -z (desce de frente)
-   Paletas: 0 = jogador (laranja/ciano); 1..4 = bots coloridos
+   Paletas: 0 = jogador (laranja/ciano); 1..4 = bots coloridos.
+   O JOGADOR usa PLAYER_SKINS (roupa + deck por skin), escolhida no menu.
    ================================================================ */
 var SKIER_PALS = [
   { jacket: [0.95, 0.32, 0.10], jacket2: [0.98, 0.42, 0.14],
@@ -2758,8 +3369,41 @@ var SKIER_PALS = [
     accent: [0.10, 0.45, 0.90], accent2: [0.2, 0.6, 1.0],
     pants: [0.12, 0.14, 0.22], helmet: [0.95, 0.95, 0.98], helmet2: [1.0, 1.0, 1.0] }
 ];
-function makeSkierParts(palIdx){
-  var PAL = SKIER_PALS[palIdx || 0];
+/* skins do jogador: paleta completa por skin - jaqueta, calcas, capacete
+   e a cor do deck (esqui ou prancha). Bots continuam em SKIER_PALS. */
+var PLAYER_SKINS = [
+  { name: "Cl\u00e1ssico",
+    jacket: [0.95, 0.32, 0.10], jacket2: [0.98, 0.42, 0.14],
+    accent: [0.10, 0.75, 0.85], accent2: [0.16, 0.85, 0.95],
+    pants: [0.12, 0.14, 0.22], helmet: [0.93, 0.95, 0.98], helmet2: [1.0, 1.0, 1.0],
+    deck: [0.92, 0.30, 0.10], deck2: [0.98, 0.45, 0.15], tip: [0.10, 0.80, 0.85] },
+  { name: "Aurora",
+    jacket: [0.55, 0.15, 0.85], jacket2: [0.68, 0.28, 0.95],
+    accent: [0.98, 0.20, 0.55], accent2: [1.0, 0.45, 0.70],
+    pants: [0.10, 0.10, 0.16], helmet: [0.20, 0.10, 0.30], helmet2: [0.45, 0.25, 0.60],
+    deck: [0.48, 0.12, 0.78], deck2: [0.62, 0.22, 0.92], tip: [0.98, 0.20, 0.55] },
+  { name: "Glacial",
+    jacket: [0.12, 0.55, 0.90], jacket2: [0.20, 0.68, 0.98],
+    accent: [0.92, 0.98, 1.0], accent2: [1.0, 1.0, 1.0],
+    pants: [0.16, 0.20, 0.28], helmet: [0.90, 0.94, 0.99], helmet2: [1.0, 1.0, 1.0],
+    deck: [0.10, 0.60, 0.95], deck2: [0.25, 0.75, 1.0], tip: [0.90, 0.97, 1.0] },
+  { name: "Vulc\u00e3o",
+    jacket: [0.16, 0.16, 0.19], jacket2: [0.24, 0.24, 0.28],
+    accent: [0.92, 0.15, 0.10], accent2: [1.0, 0.35, 0.25],
+    pants: [0.10, 0.10, 0.12], helmet: [0.85, 0.10, 0.08], helmet2: [1.0, 0.35, 0.30],
+    deck: [0.88, 0.12, 0.10], deck2: [0.98, 0.30, 0.20], tip: [0.95, 0.75, 0.10] },
+  { name: "Meia-noite",
+    jacket: [0.07, 0.08, 0.16], jacket2: [0.12, 0.14, 0.26],
+    accent: [0.35, 0.95, 0.25], accent2: [0.55, 1.0, 0.40],
+    pants: [0.08, 0.09, 0.13], helmet: [0.06, 0.07, 0.10], helmet2: [0.20, 0.22, 0.30],
+    deck: [0.05, 0.35, 0.40], deck2: [0.10, 0.55, 0.60], tip: [0.35, 0.95, 0.25] },
+  { name: "Alpine",
+    jacket: [0.93, 0.89, 0.80], jacket2: [1.0, 0.98, 0.92],
+    accent: [0.10, 0.45, 0.25], accent2: [0.16, 0.60, 0.32],
+    pants: [0.09, 0.30, 0.16], helmet: [0.10, 0.40, 0.22], helmet2: [0.22, 0.58, 0.35],
+    deck: [0.10, 0.50, 0.26], deck2: [0.16, 0.62, 0.34], tip: [0.93, 0.89, 0.80] }
+];
+function makeBodyParts(PAL){
   var parts = [];
   var JACKET  = PAL.jacket, JACKET2 = PAL.jacket2;
   var ACCENT  = PAL.accent, ACCENT2 = PAL.accent2;
@@ -2768,9 +3412,6 @@ function makeSkierParts(palIdx){
   var SKIN    = [0.87, 0.66, 0.52];
   var DARK    = [0.06, 0.06, 0.08];
   var MIRROR  = [0.30, 0.80, 0.90], MIRROR2 = [0.65, 0.95, 1.0];
-  var STEEL   = [0.80, 0.83, 0.90];
-  var DECK    = [0.92, 0.30, 0.10], DECK2 = [0.98, 0.45, 0.15];
-  var TIPCOL  = [0.10, 0.80, 0.85];
   var BOOT    = [0.08, 0.08, 0.10];
   function P(name, G){ parts.push({ name: name, geo: G.out() }); }
   var G;
@@ -2809,6 +3450,20 @@ function makeSkierParts(palIdx){
     return G2;
   }
   P("legL", mkLeg()); P("legR", mkLeg());
+  return parts;
+}
+
+/* esquiador: corpo + esquis + bastoes. pal opcional substitui a paleta
+   (jogador usa PLAYER_SKINS; bots, SKIER_PALS) */
+function makeSkierParts(palIdx, pal){
+  var PAL = pal || SKIER_PALS[palIdx || 0];
+  var parts = makeBodyParts(PAL);
+  var DARK    = [0.06, 0.06, 0.08];
+  var STEEL   = [0.80, 0.83, 0.90];
+  var DECK    = PAL.deck || [0.92, 0.30, 0.10], DECK2 = PAL.deck2 || [0.98, 0.45, 0.15];
+  var TIPCOL  = PAL.tip || [0.10, 0.80, 0.85];
+  var BOOT    = [0.08, 0.08, 0.10];
+  function P(name, G){ parts.push({ name: name, geo: G.out() }); }
 
   function mkSki(){
     var G2 = new Geo();
@@ -2828,6 +3483,26 @@ function makeSkierParts(palIdx){
   }
   P("poleL", mkPole()); P("poleR", mkPole());
 
+  return parts;
+}
+
+/* snowboarder: MESMO corpo e MESMA fisica do esquiador; prancha unica
+   (twin tip) e sem bastoes. A postura lateral (pe esquerdo a frente)
+   e montada pelo boardPose. */
+function makeSnowboardParts(pal){
+  var PAL = pal || SKIER_PALS[0];
+  var parts = makeBodyParts(PAL);
+  var DARK  = [0.06, 0.06, 0.08];
+  var DECK = PAL.deck || [0.92, 0.30, 0.10], DECK2 = PAL.deck2 || [0.98, 0.45, 0.15];
+  var TIPCOL = PAL.tip || [0.10, 0.80, 0.85];
+  function P(name, G){ parts.push({ name: name, geo: G.out() }); }
+  var G2 = new Geo();
+  bakePrism(G2, 0, 0, 0, 0.31, 1.48, 0.27, 1.12, 0.045, DECK, DECK2);            // prancha
+  bakePrism(G2, 0, 0.012, -0.80, 0.29, 0.26, 0.24, 0.14, 0.05, TIPCOL, TIPCOL);  // ponta dianteira
+  bakePrism(G2, 0, 0.012, 0.80, 0.29, 0.26, 0.24, 0.14, 0.05, TIPCOL, TIPCOL);   // ponta traseira (twin)
+  bakePrism(G2, 0, 0.04, -0.26, 0.16, 0.22, 0.13, 0.18, 0.06, DARK);            // fixacao dianteira
+  bakePrism(G2, 0, 0.04, 0.26, 0.16, 0.22, 0.13, 0.18, 0.06, DARK);             // fixacao traseira
+  P("board", G2);
   return parts;
 }
 
@@ -2920,6 +3595,101 @@ function skierPose(st, anim, c){
   return out;
 }
 
+/* pose do snowboarder: le o MESMO estado fisico do esquiador (fisica
+   identica), mas o corpo anda de lado (regular: pe esquerdo a frente).
+   Giros, flips, grab, tuck e quedas aplicam-se igual - so a postura
+   muda. A inclinacao deleanca a PRANCHA no referencial de marcha
+   (edging visivel) antes de girar o corpo; flips giram no referencial
+   de marcha, como no esqui. */
+function boardPose(st, anim, c){
+  anim = anim || {};
+  var yaw = st.yaw, lean = (anim.lean !== undefined ? anim.lean : st.lean);
+  if (st.brushT > 0)
+    lean += (st.brushDir || 0) * 0.45 * Math.min(1, st.brushT / 0.5);
+  lean = clamp(lean, -0.5, 0.5);   // edging contido: cantinha sem angulo absurdo
+  var crouch = clamp(anim.crouch !== undefined ? anim.crouch : 0.15, 0, 1);
+  if (anim.landFlex) crouch = clamp(crouch + anim.landFlex, 0, 1);
+  var inAir = st.grounded === false;
+  var grab = (anim.grabT || 0) > 0.22;
+  var tuck = !!anim.tuck && !inAir;
+  var crash = st.crashT > 0;
+  var out = {};
+  var root = M4.mul(M4.translation(st.x, st.y, st.z), M4.rotY(-yaw));
+  root = M4.mul(root, M4.rotZ(lean));            // prancha de cantinha: edging
+  if (c && st.grounded && st.crashT <= 0){
+    var g2p = gradAt(c, st.x, st.s);
+    root = M4.mul(root, M4.rotX(Math.atan(g2p[0] * Math.sin(yaw) +
+                                         g2p[1] * Math.cos(yaw))));
+  }
+  /* flips NA VISAO DO SNOWBOARDER: o corpo anda de lado, entao os eixos
+     trocam em relacao ao esquiador. Front/backflip giram sobre a linha
+     dos ombros (eixo de marcha); o lincoln gira sobre o eixo que
+     atravessa a prancha (lateral). Os nomes seguem o que o RIDER sente. */
+  if (st.flipOn && st.flipDeg){
+    var fAng = st.flipDeg * Math.PI / 180;
+    var fRot = st.flipType === "lincoln" ? M4.rotX(-fAng)
+             : M4.rotZ(st.flipType === "frontflip" ? fAng : -fAng);
+    var fPivot = M4.mul(M4.mul(M4.translation(0, 0.9, 0), fRot),
+                        M4.translation(0, -0.9, 0));
+    root = M4.mul(root, fPivot);
+  }
+  if (crash){
+    var spin2 = (1 - st.crashT / PHYS.crashTime) * 9;
+    root = M4.mul(root, M4.rotX(-Math.min(spin2, 1.25)));  // senta no tombo
+    root = M4.mul(root, M4.translation(0, -0.50, 0));
+  }
+  root = M4.mul(root, M4.rotY(Math.PI / 2));      // postura lateral (regular)
+  var hipsY = 0.98 - 0.46 * crouch;
+  var hipM = M4.mul(root, M4.translation(0, hipsY, 0));
+  /* tuck de velocidade: peito quase na coxa, torso deitado no vento */
+  var torsoPitch = (tuck ? 1.18 : 0.50) * crouch + (anim.airPitch || 0) * 0.6;
+  var torso = M4.mul(hipM, M4.mul(M4.translation(0, 0.20, 0), M4.rotX(-torsoPitch)));
+  out.torso = torso;
+  var headM = M4.mul(torso, M4.mul(M4.translation(0, 0.40, 0), M4.rotX(torsoPitch * 0.8)));
+  out.head = headM;
+  out.goggles = M4.mul(headM, M4.mul(M4.translation(0, 0.02, -0.13), M4.identity()));
+
+  /* bracos: abertos para equilibrar; grab = mao dianteira na prancha */
+  var swing2 = anim.armSwing || 0;
+  var armSpread, armX;
+  if (crash){ armSpread = 0.90; armX = 0.32; }
+  else if (inAir){ armSpread = 0.55; armX = -0.07 + swing2; }
+  else if (grab){ armSpread = 0.50; armX = 0.28; }
+  else if (tuck){ armSpread = 0.12; armX = 0.30; }    // colados ao corpo, maos A FRENTE
+  else { armSpread = 0.40 + 0.15 * crouch; armX = 0.06 + swing2 * 0.5; }
+  out.armL = M4.mul(torso, M4.mul(M4.translation(-0.24, 0.16, 0),
+                  M4.mul(M4.rotZ(armSpread), M4.mul(M4.rotX(armX + swing2), M4.translation(0, -0.02, 0)))));
+  out.armR = M4.mul(torso, M4.mul(M4.translation(0.24, 0.16, 0),
+                  M4.mul(M4.rotZ(-armSpread), M4.mul(M4.rotX(armX - swing2), M4.translation(0, -0.02, 0)))));
+  if (grab){
+    out.armL = M4.mul(torso, M4.mul(M4.translation(-0.20, 0.10, 0),
+                    M4.mul(M4.rotZ(0.25), M4.mul(M4.rotX(1.30), M4.translation(0, 0, 0.1)))));
+  }
+
+  /* pernas: pes afastados ao longo da prancha (eixo x do corpo = marcha) */
+  var legPitch = (tuck ? 0.95 : 0.58) * crouch + 0.16;
+  if (inAir && !crash) legPitch = grab ? 1.00 : 0.78;
+  out.legL = M4.mul(hipM, M4.mul(M4.translation(-0.24, -0.04, 0.02), M4.rotX(legPitch)));
+  out.legR = M4.mul(hipM, M4.mul(M4.translation(0.24, -0.04, -0.02), M4.rotX(legPitch)));
+  /* prancha MONTADA NOS PES: espelha EXATAMENTE o mount do esqui
+     (rot(legPitch) aplicado a (0,-0.92,-0.10)), no ponto medio entre
+     os dois pes. Antes era fixa sob o quadril: em tuck/pulo os pes
+     iam a frente e a prancha ficava para tras, flutuando. */
+  var legA = legPitch;                      // pernas identicas: pes alinhados
+  /* prancha montada EXATAMENTE no ponto do pe, como os esquis: o mesmo
+     rot(legPitch) aplicado a (0,-0.92,-0.10). Sem afundar (-0.08 antigo
+     enterrava a prancha na neve) e sem offset extra do quadril. */
+  var mY = -0.92 * Math.cos(legA) + 0.10 * Math.sin(legA);
+  var mZ = -0.92 * Math.sin(legA) - 0.10 * Math.cos(legA);
+  /* pitch da prancha: NO SOLO fica PARALELA a neve (o root ja inclina
+     com o gradiente do terreno); no ar ganha um peq. nariz arriba */
+  var boardPitch = (anim.skiPitch || 0) + (inAir ? 0.12 : 0);
+  out.board = M4.mul(hipM, M4.mul(M4.translation(0, mY, mZ),
+                   M4.mul(M4.rotX(boardPitch), M4.rotY(Math.PI / 2))));
+  return out;
+}
+
+
 /* cadeirinha de teleferico (dinamica: pendurada no cabo) */
 function makeChairParts(){
   var G = new Geo();
@@ -2931,11 +3701,11 @@ function makeChairParts(){
   bakePrism(Gh, 0, -1.95, 0, 0.07, 0.07, 0.05, 0.05, 1.95, steel, steel2);   // haste de suspensao
   P2("hanger", Gh);
   var Gb = new Geo();
-  bakePrism(Gb, 0, -2.12, 0, 1.5, 0.55, 1.4, 0.45, 0.10, steel, steel2);      // banco
-  bakePrism(Gb, 0, -2.16, 0.30, 0.08, 0.08, 1.4, 0.08, 0.50, seat, seat2);    // encosto
+  bakePrism(Gb, 0, -2.12, 0, 1.3, 0.55, 1.2, 0.45, 0.10, steel, steel2);      // banco
+  bakePrism(Gb, 0, -2.16, 0.30, 0.08, 0.08, 1.2, 0.08, 0.50, seat, seat2);    // encosto
   P2("body", Gb);
   var Gf = new Geo();
-  bakePrism(Gf, 0, -1.55, 0, 1.5, 0.5, 0.06, 0.06, 0.06, [0.10, 0.10, 0.14]); // barra de seguranca
+  bakePrism(Gf, 0, -1.55, 0, 1.3, 0.5, 0.06, 0.06, 0.06, [0.10, 0.10, 0.14]); // barra de seguranca
   P2("bar", Gf);
   return parts;
 }
@@ -2947,14 +3717,72 @@ function makeGondolaParts(){
   var body = [0.88, 0.90, 0.94], body2 = [0.94, 0.96, 0.99];
   var band = [0.15, 0.35, 0.55];
   var red = [0.86, 0.12, 0.12];
-  bakePrism(Gb, 0, -2.6, 0, 2.6, 2.0, 2.5, 1.9, 2.2, body, body2);           // casco
-  bakePrism(Gb, 0, -1.05, 0, 2.62, 1.98, 2.42, 1.82, 0.75, band, band);      // faixa de janelas
-  bakePrism(Gb, 0, -0.30, 0, 2.62, 2.02, 2.52, 1.92, 0.30, red, red);        // teto
+  bakePrism(Gb, 0, -2.6, 0, 2.4, 2.0, 2.3, 1.9, 2.2, body, body2);           // casco
+  bakePrism(Gb, 0, -1.05, 0, 2.42, 1.98, 2.32, 1.82, 0.75, band, band);      // faixa de janelas
+  bakePrism(Gb, 0, -0.30, 0, 2.42, 2.02, 2.32, 1.92, 0.30, red, red);        // teto
   P2("body", Gb);
   var Gh = new Geo();
   bakePrism(Gh, 0, -0.35, 0, 0.09, 0.09, 0.07, 0.07, 0.55, [0.16, 0.17, 0.22], [0.26, 0.28, 0.34]);
   P2("hanger", Gh);
   return parts;
+}
+/* interior da gondola: piso, teto, molduras de janela e banco traseiro.
+   Desenhado so na cabine que o jogador ocupa: a casca externa e pulada
+   na posicao dele, e a camera entra na cabine (visao interna). */
+function makeGondolaInteriorParts(){
+  var parts = [];
+  function P2(name, G2){ parts.push({ name: name, geo: G2.out() }); }
+  var wall = [0.74, 0.77, 0.82], wall2 = [0.84, 0.87, 0.91];
+  var seat = [0.16, 0.28, 0.46], seat2 = [0.22, 0.36, 0.56];
+  var G = new Geo();
+  bakePrism(G, 0, -2.62, 0, 2.24, 2.34, 2.20, 2.28, 0.10, wall, wall2);   // piso
+  bakePrism(G, 0, -0.55, 0, 2.20, 2.30, 2.16, 2.24, 0.10, wall, wall2);    // teto
+  bakePrism(G, 0, -2.52, 0.78, 2.12, 0.55, 2.06, 0.50, 0.48, seat, seat2); // banco
+  /* janelas laterais (abertura entre faixas inferior/superior) */
+  for (var sd = -1; sd <= 1; sd += 2){
+    bakePrism(G, sd * 1.14, -2.52, 0, 0.08, 2.34, 0.08, 2.26, 1.17, wall, wall2);
+    bakePrism(G, sd * 1.14, -0.70, 0, 0.08, 2.34, 0.08, 2.26, 0.22, wall, wall2);
+    bakePrism(G, sd * 1.14, -1.35, -1.06, 0.08, 0.16, 0.08, 0.14, 0.65, wall, wall2);
+    bakePrism(G, sd * 1.14, -1.35, 1.06, 0.08, 0.16, 0.08, 0.14, 0.65, wall, wall2);
+  }
+  /* frente e tras: janela panoramica central entre pilares */
+  for (var zE = -1; zE <= 1; zE += 2){
+    bakePrism(G, 0, -2.52, zE * 1.18, 2.24, 0.10, 2.18, 0.10, 1.22, wall, wall2);
+    bakePrism(G, 0, -0.72, zE * 1.18, 2.24, 0.10, 2.18, 0.10, 0.28, wall, wall2);
+    bakePrism(G, -1.02, -1.30, zE * 1.18, 0.22, 0.10, 0.18, 0.10, 0.60, wall, wall2);
+    bakePrism(G, 1.02, -1.30, zE * 1.18, 0.22, 0.10, 0.18, 0.10, 0.60, wall, wall2);
+  }
+  P2("interior", G);
+  return parts;
+}
+/* pose sentada (cadeirinha): corpo no banco, olhando na direcao de
+   movimento do cabo; esquis/prancha apoiados a frente. A mesma pose
+   serve para esqui e snowboard - o dicionario de malhas do equipamento
+   do jogador define quais pecas aparecem. */
+function sitPose(M){
+  var root = M4.mul(M, M4.mul(M4.translation(0, -1.52, 0.14), M4.rotY(Math.PI)));
+  var out = {};
+  var hipM = M4.mul(root, M4.translation(0, 0.60, 0));
+  var torso = M4.mul(hipM, M4.mul(M4.translation(0, 0.20, 0), M4.rotX(-0.06)));
+  out.torso = torso;
+  var headM = M4.mul(torso, M4.mul(M4.translation(0, 0.40, 0), M4.identity()));
+  out.head = headM;
+  out.goggles = M4.mul(headM, M4.mul(M4.translation(0, 0.02, -0.13), M4.identity()));
+  out.armL = M4.mul(torso, M4.mul(M4.translation(-0.24, 0.16, 0),
+                  M4.mul(M4.rotZ(0.22), M4.mul(M4.rotX(0.62), M4.translation(0, -0.02, 0)))));
+  out.armR = M4.mul(torso, M4.mul(M4.translation(0.24, 0.16, 0),
+                  M4.mul(M4.rotZ(-0.22), M4.mul(M4.rotX(0.62), M4.translation(0, -0.02, 0)))));
+  var legPitch = 1.15;                          // coxas a frente, joelhos dobrados
+  out.legL = M4.mul(hipM, M4.mul(M4.translation(-0.14, -0.04, 0), M4.rotX(legPitch)));
+  out.legR = M4.mul(hipM, M4.mul(M4.translation(0.14, -0.04, 0), M4.rotX(legPitch)));
+  var kit = -legPitch * 0.85 + 0.15;            // esquis quase horizontais a frente
+  out.skiL = M4.mul(out.legL, M4.mul(M4.translation(0, -0.92, -0.10), M4.rotX(kit)));
+  out.skiR = M4.mul(out.legR, M4.mul(M4.translation(0, -0.92, -0.10), M4.rotX(kit)));
+  out.board = M4.mul(hipM, M4.mul(M4.translation(0, -0.96, 0.10),
+                   M4.mul(M4.rotX(-legPitch * 0.85 + 0.15), M4.rotY(Math.PI / 2))));
+  out.poleL = M4.mul(out.armL, M4.mul(M4.translation(0, -0.52, -0.03), M4.rotX(0.9)));
+  out.poleR = M4.mul(out.armR, M4.mul(M4.translation(0, -0.52, -0.03), M4.rotX(0.9)));
+  return out;
 }
 
 /* ================================================================
@@ -3106,12 +3934,22 @@ function runSelfTests(){
     }
     return ok(st.speed < 1.2 && st.vz <= 0.5, "parou em " + st.speed.toFixed(2) + " m/s");
   });
-  test("f\u00edsica: teto de velocidade respeitado", function(){
-    var c = makeCourse("free", "hard", 3);
-    var cClean = Object.assign({}, c, { obstacles: [] });
-    var r = simBot(cClean, 60, function(st){ return { steer: trackSteer(cClean, st), tuck: true, brake: false, skid: false, jump: false }; });
-    return ok(r.st.maxSpeed <= PHYS.speedMax + 0.01 && r.st.maxSpeed > 25,
-      "m\u00e1x " + (r.st.maxSpeed * 3.6).toFixed(0) + " km/h (teto " + (PHYS.speedMax * 3.6).toFixed(0) + ")");
+  test("f\u00edsica: sem teto de velocidade; acima de 400 km/h pega fogo e explode", function(){
+    var c = makeCourse("free", "extremo", 500);
+    var cClean = Object.assign({}, c, { obstacles: [], ramps: [], chokes: [] });
+    var st = newSkierState(cClean);
+    st.grounded = true; st.y = heightAt(cClean, st.x, st.s); st.prevGh = st.y;
+    var over = 0, exploded = false;
+    for (var t = 0; t < 120 && !exploded; t++){
+      st.vx = 0; st.vz = -112;             // ~403 km/h mantidos por fora
+      var evs = physStep(st, { steer: 0, tuck: true, brake: false, skid: false, jump: false }, cClean, 1 / 30);
+      if (st.speed > PHYS.speedMax + 5) over++;   // sem teto: passou dos 165 km/h
+      for (var j = 0; j < evs.length; j++)
+        if (evs[j].type === "explode") exploded = true;
+    }
+    return ok(over >= 3 && exploded && st.dnf && st.burnT >= PHYS.burnFuse,
+      "over-cap " + over + " ticks, explodiu=" + exploded + ", dnf=" + st.dnf +
+      " (burnT " + (st.burnT || 0).toFixed(2) + "s)");
   });
   test("f\u00edsica: determinismo com mesma entrada", function(){
     var c = makeCourse("free", "med", 7);
@@ -3214,13 +4052,16 @@ function runSelfTests(){
       var close = true;
       if (st.gateIdx < c.gates.length){
         var g = c.gates[st.gateIdx];
-        close = g.s - st.s < 70;
+        close = g.s - st.s < 100;   // paredao: mira no portao com antecedencia
         target = close ? g.x : trackX(c, st.s + 42) + (g.x - trackX(c, g.s)) * 0.45;
       } else target = trackX(c, st.s + 42);
       var err = target - st.x;
-      var steer = clamp(err * 0.06 - st.yaw * 1.6, -1, 1);
-      var brake = st.speed > (close ? 30 : 31);
-      return { steer: steer, tuck: !brake && st.speed < 27, brake: brake, skid: false, jump: false };
+      var steer = clamp(err * 0.08 - st.yaw * 1.7, -1, 1);
+      var brake = st.speed > (close ? 24 : 26);   // inclinacao de copa: controla antes do portao
+      /* derrapa para cortar a curva quando esta largo - como um
+         corredor de verdade em pista inclinada */
+      var skid = close && Math.abs(err) > 3 && st.speed > 18;
+      return { steer: steer, tuck: !brake && st.speed < 22, brake: brake, skid: skid, jump: false };
     });
     var passed = 0, missed = 0;
     for (var i = 0; i < r.evs.length; i++){
@@ -3570,6 +4411,24 @@ function runSelfTests(){
       " warpS=" + wS + " g2=" + (cS.gates[2] ? cS.gates[2].s : -1) +
       " warpC=" + wC + " gargalo.s1=" + (cF.chokes[0] ? cF.chokes[0].s1.toFixed(0) : -1));
   });
+  test("tut: rampas centralizadas no eixo da pista", function(){
+    var segs = ["train", "trick", "endurance", "free", "slalom"];
+    var checados = 0, maxOff = 0;
+    for (var si = 0; si < segs.length; si++){
+      var spec = TUT_SEGS[segs[si]];
+      var c = makeCourse(spec.course, "easy", 777, { centerRamps: true });
+      for (var ri = 0; ri < c.ramps.length; ri++){
+        var off = Math.abs(c.ramps[ri].x - trackX(c, c.ramps[ri].s));
+        if (off > maxOff) maxOff = off;
+        checados++;
+      }
+    }
+    var cT = makeCourse(TUT_SEGS.trick.course, "easy", 777, { centerRamps: true });
+    var alvo = tutRampAlvo(cT);
+    return ok(checados >= 3 && maxOff < 0.01 &&
+              (!alvo || Math.abs(alvo.x - trackX(cT, alvo.s)) < 0.01),
+      checados + " rampas centralizadas; desvio maximo " + maxOff.toFixed(4) + " m");
+  });
   test("tut: atravessar o gargalo emite o evento", function(){
     var c = makeCourse("free", "easy", 777);
     if (!c.chokes || !c.chokes.length) return { ok: false, msg: "sem gargalos na pista de treino" };
@@ -3617,6 +4476,26 @@ function runSelfTests(){
               cS.gates.length >= 3 && cE.ramps.length > 0 &&
               st.s === Math.max(30, cS.gates[0].s - 30) && alinhado && rampaOk,
               "slope " + TUT_SEGS.train.slope + " warp portais " + st.s + " rampa " + rampa);
+  });
+  test("tut: partida adiantada mostra so pista no primeiro frame", function(){
+    var c = makeCourse(TUT_SEGS.train.course, "easy", 777, { centerRamps: true });
+    var bakC = Game.course, bakS = Game.st, bakCam = Game.cam;
+    Game.course = c; Game.cam = newCamera("chase"); Game.st = null;
+    Game.tutPlaceStart();
+    var st = Game.st, dx = Math.sin(st.yaw), dz = -Math.cos(st.yaw);
+    var sCam = -(st.z - dz * 6.6);
+    var lookS = -(st.z + dz * 5.5);
+    /* jogador no miolo da pista, no eixo, com espaco para treinar */
+    var okS = st.s === TUT_START_S && TUT_START_S >= 60 && st.s < c.length - 200 &&
+              Math.abs(st.x - trackX(c, st.s)) < 0.01;
+    /* camera nasce DENTRO da pista (bem depois do inicio da malha),
+      mirando morro abaixo (look a frente do jogador), acima do terreno */
+    var okCam = Game.cam.init === true && sCam > 40 && lookS > st.s &&
+                Game.cam.pos[1] > heightAt(c, Game.cam.pos[0], clamp(-Game.cam.pos[2], 0, c.length));
+    var msg = "s=" + st.s + " camS=" + sCam.toFixed(1) + " lookS=" + lookS.toFixed(1) +
+              " camY=" + Game.cam.pos[1].toFixed(1);
+    Game.course = bakC; Game.st = bakS; Game.cam = bakCam;
+    return ok(okS && okCam, msg);
   });
   test("resgate: ponto escolhido fica na pista, com folga de borda", function(){
     var c = makeCourse("free", "hard", 5);
@@ -3696,6 +4575,37 @@ function runSelfTests(){
     }
     return ok(true, "tiers 0-3 com plateia");
   });
+  test("rampas: faixas do nivel pintadas na neve da rampa", function(){
+    var c = makeCourse("free", "easy", 4321);
+    if (!c.ramps.length) return { ok: false, msg: "sem rampas" };
+    var TCOL = [[0.15, 0.55, 0.95], [0.10, 0.75, 0.30], [0.98, 0.55, 0.08], [0.94, 0.12, 0.10]];
+    var GROOM = [0.955, 0.972, 0.995];
+    var pintadas = 0, naFaixa = 0, sujas = 0;
+    for (var ri = 0; ri < c.ramps.length && ri < 4; ri++){
+      var r0 = c.ramps[ri];
+      var ci = Math.floor((r0.s - r0.len * 0.5) / CHUNK_LEN);
+      var m = buildChunkMesh(c, ci, { xStep: 2, sStep: 1.25, skipAO: true });
+      var tc = TCOL[r0.tier || 0];
+      var mv = [tc[0] - GROOM[0], tc[1] - GROOM[1], tc[2] - GROOM[2]];
+      var mv2 = mv[0] * mv[0] + mv[1] * mv[1] + mv[2] * mv[2];
+      for (var vi = 0; vi < m.nv; vi++){
+        var x = m.v[vi * 11], sv = -m.v[vi * 11 + 2];
+        var ds = sv - (r0.s - r0.len);
+        if (ds < 0 || ds > r0.len || Math.abs(x - r0.x) > r0.w * 0.45) continue;
+        if (rampH(c, x, sv) < 0.12) continue;
+        var dot = (m.v[vi * 11 + 6] - GROOM[0]) * mv[0] +
+                  (m.v[vi * 11 + 7] - GROOM[1]) * mv[1] +
+                  (m.v[vi * 11 + 8] - GROOM[2]) * mv[2];
+        var tintido = dot > 0.25 * mv2;
+        var uR = ds / r0.len;
+        var banda = uR >= 0.08 && uR <= 0.66 && Math.floor((uR - 0.08) / 0.19) % 2 === 0;
+        if (banda){ naFaixa++; if (tintido) pintadas++; }
+        else if (tintido) sujas++;
+      }
+    }
+    return ok(naFaixa >= 5 && pintadas >= naFaixa * 0.8 && sujas === 0,
+      "faixas: " + pintadas + "/" + naFaixa + " tintadas da cor do nivel; fora: " + sujas);
+  });
   test("course: elementos da estacao dentro da pista", function(){
     var c = makeCourse("endurance", "med", 911);
     var R = c.resort;
@@ -3719,7 +4629,8 @@ function runSelfTests(){
     var ob = null;
     for (var i = 0; i < c.obstacles.length; i++){
       var o = c.obstacles[i];
-      if (o.t !== "fence" && o.t !== "flag" && o.t !== "pole" && o.t !== "sign" && o.s > 60 && o.s < c.length - 60){ ob = o; break; }
+      if (o.t !== "fence" && o.t !== "flag" && o.t !== "pole" && o.t !== "sign" &&
+          o.t !== "crowd" && o.s > 60 && o.s < c.length - 60){ ob = o; break; }
     }
     if (!ob) return ok(true, "curso sem obstaculos avulsos");
     var st = newSkierState(c);
@@ -3775,6 +4686,41 @@ function runSelfTests(){
       return ok(onPiste >= n - 1, n + " bots, " + onPiste + " na pista");
     } finally {
       Game.st = keepSt; Game.bots = keepBots;
+    }
+  });
+
+  test("bots: turma heterogenea com snowboarders", function(){
+    var c = makeCourse("world", "med", 77);
+    var keepBots = Game.bots;
+    try {
+      botsInit(c);
+      var n = Game.bots.length;
+      if (n < 6) return { ok: false, msg: "bots: " + n };
+      var nBoard = 0, nSki = 0, vLo = 1e9, vHi = 0, kLo = 1e9, kHi = 0;
+      for (var i = 0; i < n; i++){
+        var b = Game.bots[i];
+        if (b.board) nBoard++; else nSki++;
+        vLo = Math.min(vLo, b.vMax); vHi = Math.max(vHi, b.vMax);
+        kLo = Math.min(kLo, b.look0); kHi = Math.max(kHi, b.look0);
+        if (Math.abs(b.lane) > 0.86) return { ok: false, msg: "lane fora do corredor" };
+      }
+      if (!nBoard || !nSki) return { ok: false, msg: "sem mistura prancha/esqui" };
+      if (vHi - vLo < 4) return { ok: false, msg: "velocidade unica" };
+      if (kHi - kLo < 4) return { ok: false, msg: "olhar unico" };
+      /* pose de prancha e malha de prancha usam os MESMOS nomes de peca */
+      var st = newSkierState(c);
+      var pose = boardPose(st, { crouch: 0.2 }, null);
+      var bs = makeSnowboardParts(SKIER_PALS[1]);
+      var names = {}, nParts = 0;
+      for (var j = 0; j < bs.length; j++) names[bs[j].name] = true;
+      for (var kk in pose){
+        if (!names[kk]) return { ok: false, msg: "peca sem malha: " + kk };
+        nParts++;
+      }
+      return ok(nParts >= 6, nBoard + " pranchas / " + nSki +
+        " esquis, vMax " + vLo.toFixed(0) + "-" + vHi.toFixed(0));
+    } finally {
+      Game.bots = keepBots;
     }
   });
 
@@ -3929,15 +4875,28 @@ function runSelfTests(){
     if (!c.resort.lifts.length) return { ok: false, msg: "sem telefericos" };
     for (var li = 0; li < c.resort.lifts.length; li++){
       var L = c.resort.lifts[li];
-      var s0T = null, s1T = null, mid = [];
-      for (var i = 0; i < c.obstacles.length; i++){
-        var o = c.obstacles[i];
-        if (o.t === "station" && Math.abs(o.s - L.s0) < 0.01) s0T = o;
-        else if (o.t === "station" && Math.abs(o.s - L.s1) < 0.01) s1T = o;
-        else if (o.t === "tower" && o.s > L.s0 && o.s < L.s1) mid.push(o);
+      var pOff = L.type === "gondola" ? 3.9 : 2.6;
+      var mid = [];
+      for (var e = 0; e < 2; e++){
+        var sSt = e === 0 ? L.s0 : L.s1, xSt = liftX(L, c, sSt);
+        var box = 0, posts = 0;
+        for (var i = 0; i < c.obstacles.length; i++){
+          var o = c.obstacles[i];
+          if (o.t !== "station" || Math.abs(o.s - sSt) > 0.01) continue;
+          if (Math.abs(o.x - xSt) < 0.01){
+            if (o.hx === 2.5 && o.hs === 2.5 && o.h === 3.9) box++;
+          } else if (Math.abs(Math.abs(o.x - xSt) - pOff) < 0.01){
+            if (o.hx === 0.20 && o.hs === 0.18 && o.h === 9.3) posts++;
+          }
+        }
+        if (box !== 1 || posts !== 2)
+          return { ok: false, msg: "estacao " + e + " do lift " + li +
+                   ": predio=" + box + " postes=" + posts };
       }
-      if (!s0T || !s1T || s0T.hx !== 2.6 || s1T.hx !== 2.6 || s0T.hs !== 2.6 || s1T.hs !== 2.6 || s0T.h !== 9.3 || s1T.h !== 9.3)
-        return { ok: false, msg: "estacao faltando/errada no lift " + li };
+      for (var i3 = 0; i3 < c.obstacles.length; i3++){
+        var o3 = c.obstacles[i3];
+        if (o3.t === "tower" && o3.s > L.s0 && o3.s < L.s1) mid.push(o3);
+      }
       for (var j = 0; j < mid.length; j++)
         if (mid[j].r !== 0.6 || mid[j].h !== 8.9)
           return { ok: false, msg: "torre intermediaria errada" };
@@ -3946,10 +4905,10 @@ function runSelfTests(){
       mids.sort(function(a, b){ return a - b; });
       var prev = L.s0;
       for (var j = 0; j < mids.length; j++){
-        if (mids[j] - prev > 56) return { ok: false, msg: "torre a mais de 56 m" };
+        if (mids[j] - prev > 81) return { ok: false, msg: "torre a mais de 81 m" };
         prev = mids[j];
       }
-      if (L.s1 - prev > 56) return { ok: false, msg: "sem torres no fim do lift" };
+      if (L.s1 - prev > 81) return { ok: false, msg: "sem torres no fim do lift" };
     }
     return ok(true, c.resort.lifts.length + " lifts com torres/estacoes");
   });
@@ -3975,6 +4934,31 @@ function runSelfTests(){
     for (var k2 = 0; k2 < hits.length; k2++)
       if (Math.abs(hits[k2].s - ps0) < 0.01 && Math.abs(hits[k2].x - px0) < 0.01){ near = hits[k2]; break; }
     return ok(!!near, total + " espectadores com hitbox propria (r 0.40 m, h 1.9 m)");
+  });
+  test("plateia: esbarrar em torcedor empurra e desacelera sem penalidade", function(){
+    var c = makeCourse("free", "med", 45);
+    var x200 = trackX(c, 200);
+    var c2 = Object.assign({}, c, { obstacles: [{ id: 7, s: 200, x: x200, r: 0.40,
+                                      t: "crowd", sc: 1, rot: 0, h: 1.9 }],
+                                    chokes: [], resort: null });
+    var st = newSkierState(c2);
+    st.x = x200; st.s = 200.5; st.z = -st.s;
+    st.vx = 0; st.vz = -16;
+    st.y = heightAt(c2, st.x, st.s); st.prevGh = st.y; st.grounded = true;
+    var sc = newScore();
+    var soft = 0, pen = 0;
+    for (var t = 0; t < 3; t++){
+      var evs = physStep(st, { steer: 0, tuck: false, brake: false, skid: false, jump: false }, c2, 1 / 60);
+      for (var j = 0; j < evs.length; j++){
+        var et = evs[j].type;
+        if (et === "crowdbump") soft++;
+        if (et === "bump" || et === "stumble" || et === "crash") pen++;
+        scoreApplyEvent(sc, evs[j], "free");
+      }
+    }
+    return ok(soft === 1 && pen === 0 && sc.collisions === 0 && sc.pts === 0 &&
+              st.crashT === 0 && st.stumbleT === 0,
+      "crowdbump " + soft + ", penalidades " + pen + ", colisoes " + sc.collisions);
   });
   test("chegada: postes do portal com hitbox", function(){
     var c = makeCourse("free", "med", 45);
@@ -4178,19 +5162,24 @@ function runSelfTests(){
       st.y = base + dy; st.prevGh = st.y; st.grounded = false;
       st.vx = 0; st.vz = 0; st.vy = 0;
       var evs = physStep(st, { steer: 0, tuck: false, brake: false, skid: false, jump: false }, c2, 1 / 60);
-      var hit = 0;
+      /* plateia nao e colisao dura: esbarrar gera crowdbump (empurrao leve);
+         bump/stumble/crash seriam penalidade: nao podem acontecer aqui */
+      var soft = 0, hard = 0;
       for (var j = 0; j < evs.length; j++){
         var t2 = evs[j].type;
-        if (t2 === "bump" || t2 === "stumble" || t2 === "crash") hit++;
+        if (t2 === "crowdbump") soft++;
+        if (t2 === "bump" || t2 === "stumble" || t2 === "crash") hard++;
       }
-      return hit;
+      return { soft: soft, hard: hard };
     }
     var vC = probeBox(3.2, 5.5, 1.75, 2.1);    // voa sobre a plateia
-    var gC = probeBox(3.2, 5.5, 1.75, 0.05);   // rente ao chao: colide
+    var gC = probeBox(3.2, 5.5, 1.75, 0.05);   // rente ao chao: esbarra no torcedor
     var vS = probeBox(2.6, 2.3, 5.9, 6.3);      // voa sobre a estacao
-    var gS = probeBox(2.6, 2.3, 5.9, 3.0);      // no meio da estacao: colide
-    return ok(vC === 0 && gC >= 1 && vS === 0 && gS >= 1,
-      "voando: " + vC + "/" + vS + " | baixo: " + gC + "/" + gS);
+    var gS = probeBox(2.6, 2.3, 5.9, 3.0);     // no meio da estacao: esbarra
+    return ok(vC.soft === 0 && vC.hard === 0 && vS.soft === 0 && vS.hard === 0 &&
+              gC.soft >= 1 && gC.hard === 0 && gS.soft >= 1 && gS.hard === 0,
+      "voando: " + vC.soft + "/" + vS.soft + " | esbarrando (empurrao/penalidade): " +
+      gC.soft + "/" + gC.hard + " e " + gS.soft + "/" + gS.hard);
   });
 
   test("fisica: salto manual baixo e realista", function(){
@@ -4213,8 +5202,34 @@ function runSelfTests(){
       }
     }
     var rise = top !== null ? top - y0 : -1;
-    return ok(jumped && landed && rise > 0.15 && rise < 0.8,
-      "subida absoluta do salto: " + rise.toFixed(2) + " m");
+    return ok(jumped && landed && rise > 0.005 && rise < 0.25,
+      "subida absoluta do salto: " + rise.toFixed(3) + " m (intensidade 25%)");
+  });
+
+  test("tut: pulo ampliado 10x para executar truques", function(){
+    var c = makeCourse("free", "easy", 12);
+    var cClean = Object.assign({}, c, { obstacles: [], chokes: [], ramps: [] });
+    /* mede o vy de decolagem (deterministico): o airtime do pouso depende
+       do relevo a frente e nao escala limpo com o boost */
+    function vyDe(boost){
+      TUT_JUMP_BOOST = boost;
+      var st = newSkierState(cClean);
+      st.vz = -20;
+      var vy = -1;
+      for (var i = 0; i < 600 && vy < 0; i++){
+        var ev = physStep(st, { steer: 0, tuck: true, brake: false, skid: false,
+                                jump: st.grounded && st.speed > 10 }, cClean, 1 / 60);
+        for (var j = 0; j < ev.length; j++)
+          if (ev[j].type === "jump" && ev[j].manual){ vy = st.vy; break; }
+      }
+      return vy;
+    }
+    var normal = vyDe(1), amp = vyDe(10);
+    TUT_JUMP_BOOST = 1;
+    return ok(normal > 0.25 && normal < 1.0 &&
+              amp > normal * 9 && amp < normal * 15,
+      "vy de decolagem: normal " + normal.toFixed(2) + " m/s vs tutorial " +
+      amp.toFixed(2) + " m/s (10x)");
   });
 
   test("score: pulo raso nao pontua (altura minima)", function(){
@@ -4494,6 +5509,246 @@ function runSelfTests(){
       "pitch " + found.pitch.toFixed(3) + " acompanha o gradiente " + found.ga.toFixed(3));
   });
 
+  /* ---------- Mundo Aberto / snowboard / skins ---------- */
+  test("mundo aberto: vale com bowls e telefericos", function(){
+    var c = makeCourse("world", "med", 55);
+    if (!c.bowls || c.bowls.length < 4) return { ok: false, msg: "bowls=" + (c.bowls ? c.bowls.length : 0) };
+    if (!c.resort || c.resort.lifts.length < 2) return { ok: false, msg: "lifts insuficientes" };
+    if (!validateCourse(c)) return { ok: false, msg: "curso invalido" };
+    var B = c.bowls[0];
+    if (!B.name || !isFinite(B.r) || !isFinite(B.d)) return { ok: false, msg: "bowl mal formado" };
+    return ok(true, c.bowls.length + " bowls, " + c.resort.lifts.length + " lifts");
+  });
+
+  test("mundo aberto: bowls rebaixam o terreno suave", function(){
+    var c = makeCourse("world", "med", 55);
+    var B = c.bowls[1];
+    var hIn = heightAt(c, B.cx, B.s);
+    var hOut = heightAt(c, B.cx + B.r * 1.4, B.s);
+    var g = gradAt(c, B.cx, B.s);
+    return ok(hIn < hOut - B.d * 0.5 && isFinite(g[0]) && isFinite(g[1]),
+      "fundo " + hIn.toFixed(2) + " < borda " + hOut.toFixed(2) + " (d=" + B.d.toFixed(2) + ")");
+  });
+
+  test("mundo aberto: sem chegada, o limite e o terminal", function(){
+    var c = makeCourse("world", "med", 55);
+    if (!c.grandLift) return { ok: false, msg: "sem elevador principal" };
+    var st = newSkierState(c);
+    st.s = c.length - 30; st.z = -st.s; st.x = trackX(c, st.s);
+    st.vz = -8; st.grounded = true;
+    var sawFinish = false, passedWall = false;
+    for (var i = 0; i < 600; i++){
+      var evs = physStep(st, { steer: 0, tuck: false, brake: false, skid: false, jump: false }, c, 1 / 60);
+      for (var j = 0; j < evs.length; j++) if (evs[j].type === "finish") sawFinish = true;
+      if (st.s > c.grandLift.s1 - 7) passedWall = true;
+      if (st.finished) break;
+    }
+    return ok(!sawFinish && !st.finished && !passedWall,
+      "s=" + st.s.toFixed(0) + " de " + c.length.toFixed(0) +
+      " terminal=" + c.grandLift.s1.toFixed(0) + (sawFinish ? " (finish!)" : ""));
+  });
+
+  test("mundo aberto: terminal gigante e elevador obrigatorio", function(){
+    var c = makeCourse("world", "med", 55);
+    if (!c.grandLift) return { ok: false, msg: "sem elevador principal" };
+    var L = c.grandLift;
+    if (!L.grand || L.type !== "gondola" || L !== c.resort.lifts[c.resort.lifts.length - 1])
+      return { ok: false, msg: "elevador principal mal formado" };
+    if (L.s0 > 600 || Math.abs(L.s1 - (c.length - 95)) > 0.01)
+      return { ok: false, msg: "span errado: " + L.s0 + ".." + L.s1 };
+    /* salao que fecha o vale + estacoes (predio + 2 postes) + torres */
+    var hall = null, box0 = 0, posts0 = 0, towers = 0;
+    for (var i = 0; i < c.obstacles.length; i++){
+      var o = c.obstacles[i];
+      if (o.t === "hall" && Math.abs(o.s - L.s1) < 0.01) hall = o;
+      else if (o.t === "station" && Math.abs(o.s - L.s0) < 0.01){
+        if (o.hx === 2.5) box0++;
+        else if (o.hx === 0.20) posts0++;
+      } else if (o.t === "tower" && o.s > L.s0 && o.s < L.s1) towers++;
+    }
+    if (!hall || hall.hx < trackW(c, L.s1))
+      return { ok: false, msg: "salao do terminal faltando" };
+    if (box0 !== 1 || posts0 !== 2)
+      return { ok: false, msg: "estacao do topo: predio=" + box0 + " postes=" + posts0 };
+    if (towers < Math.floor((L.s1 - L.s0) / 56) - 1)
+      return { ok: false, msg: "torres faltando: " + towers };
+    /* embarque FORCADO: jogador no terminal embarca sem teclar nada */
+    var st = newSkierState(c);
+    st.s = L.s1 - 10; st.z = -st.s; st.x = trackX(c, st.s);
+    st.y = heightAt(c, st.x, st.s); st.prevGh = st.y;
+    st.grounded = true; st.crashT = 0; st.speed = 12;
+    var gAnt = { course: Game.course, st: Game.st, state: Game.state,
+                 time: Game.time, ride: Game.ride, cam: Game.cam };
+    if (typeof audioEvent === "undefined"){
+      if (typeof globalThis === "object" && globalThis) globalThis.audioEvent = function(){};
+      else window.audioEvent = function(){};
+    }
+    Game.course = c; Game.st = st; Game.state = "running";
+    Game.time = 77.7; Game.ride = null; Game.cam = null;
+    Game.tryRide(L, true);
+    var boarded = !!(Game.ride && Game.ride.lift === L);
+    Game.course = gAnt.course; Game.st = gAnt.st; Game.state = gAnt.state;
+    Game.time = gAnt.time; Game.ride = gAnt.ride; Game.cam = gAnt.cam;
+    /* bots: chegam ao terminal, sobem de gondola e desembarcam no topo */
+    var kb = { st: Game.st, bots: Game.bots };
+    Game.course = c; Game.st = st;
+    botsInit(c);
+    var nBots = Game.bots.length;
+    var b = Game.bots[0];
+    b.st.s = L.s1 - 10; b.st.z = -b.st.s; b.st.x = trackX(c, b.st.s);
+    b.state = "run";
+    Game.st = { s: c.length * 0.5 };    // jogador longe do bot
+    botsStep(c, 1 / 60);
+    var onLift = b.state === "lift";
+    var guard = 0;
+    while (b.state === "lift" && guard < 4000){ botsStep(c, 5); guard++; }
+    var cameDown = b.state === "run" && b.st.s < L.s0 && b.st.s > 20 && b.st.grounded;
+    Game.st = kb.st; Game.bots = kb.bots; Game.course = gAnt.course;
+    return ok(boarded && onLift && cameDown && nBots >= 6,
+      "embarcou=" + boarded + " botNoLift=" + onLift + " botDesembarcou=" +
+      cameDown + " bots=" + nBots + " torres=" + towers);
+  });
+
+  test("mundo aberto: bowls limpos de obstaculos de pista", function(){
+    var c = makeCourse("world", "med", 55);
+    var bad = 0;
+    for (var i = 0; i < c.obstacles.length; i++){
+      var o = c.obstacles[i];
+      if (o.onPiste && c.bowlAt(o.s, o.x)) bad++;
+    }
+    return ok(bad === 0, "onPiste dentro de bowl: " + bad);
+  });
+
+  test("teleferico: embarque, subida e desembarque no topo", function(){
+    var c = makeCourse("world", "med", 55);
+    var L = null;
+    for (var i = 0; i < c.resort.lifts.length; i++)
+      if (c.resort.lifts[i].type === "chair"){ L = c.resort.lifts[i]; break; }
+    if (!L) return { ok: false, msg: "sem cadeirinha" };
+    var st = newSkierState(c);
+    st.s = L.s1; st.z = -L.s1; st.x = liftX(L, c, L.s1);
+    st.y = heightAt(c, st.x, st.s); st.prevGh = st.y;
+    st.speed = 0; st.grounded = true; st.crashT = 0;
+    var gAnt = { course: Game.course, st: Game.st, state: Game.state,
+                 time: Game.time, ride: Game.ride, cam: Game.cam };
+    var semAudio = (typeof audioEvent === "undefined");
+    if (semAudio){
+      /* headless: audioEvent vive fora da fatia da suite - publica um
+         stub no objeto global (o codigo e "use strict", entao atribuir
+         a um identificador nao declarado lancaria ReferenceError) */
+      if (typeof globalThis === "object" && globalThis) globalThis.audioEvent = function(){};
+      else window.audioEvent = function(){};
+    }
+    Game.course = c; Game.st = st; Game.state = "running";
+    Game.time = 123.4; Game.ride = null; Game.cam = null;
+    Game.tryRide();
+    var boarded = !!Game.ride;
+    var midAir = false;
+    if (boarded){
+      var f1 = 0;
+      while (Game.ride && f1 < 1200 && st.s > L.s1 - 20){
+        Game.time += 1/60; Game.rideStep(1/60); f1++;
+      }
+      midAir = !st.grounded && st.s < L.s1 - 19;    // preso ao cabo, subindo
+    }
+    var frames = 0, maxF = 60000;
+    while (Game.ride && frames < maxF){ Game.time += 1/60; Game.rideStep(1/60); frames++; }
+    var okRide = boarded && midAir && !Game.ride && st.grounded && st.s <= L.s0 + 12 && frames < maxF;
+    Game.course = gAnt.course; Game.st = gAnt.st; Game.state = gAnt.state;
+    Game.time = gAnt.time; Game.ride = gAnt.ride; Game.cam = gAnt.cam;
+    return ok(okRide, "embarcou=" + boarded + " subindo=" + midAir +
+      " frames=" + frames + " s=" + st.s.toFixed(0) + " topo=" + L.s0.toFixed(0));
+  });
+
+  test("save: gear e skin persistem com sanitizacao", function(){
+    var s1 = sanitizeSave({ settings: { gear: "board", skin: 2 } });
+    var s2 = sanitizeSave({ settings: { gear: "mono", skin: 99 } });
+    var s3 = sanitizeSave({ settings: { gear: "ski", skin: "x" } });
+    return ok(s1.settings.gear === "board" && s1.settings.skin === 2 &&
+              s2.settings.gear === "ski" && s2.settings.skin === PLAYER_SKINS.length - 1 &&
+              s3.settings.gear === "ski" && s3.settings.skin === 0,
+      "board=" + (s1.settings.gear === "board") + " clamp=" + s2.settings.skin);
+  });
+
+  test("modelo: snowboard tem prancha; esqui tem esquis e bastoes", function(){
+    var pb = makeSnowboardParts(PLAYER_SKINS[1]);
+    var nb = {};
+    for (var i = 0; i < pb.length; i++) nb[pb[i].name] = true;
+    if (!nb.board) return { ok: false, msg: "sem prancha" };
+    if (nb.poleL || nb.poleR || nb.skiL || nb.skiR)
+      return { ok: false, msg: "snowboarder com pecas de esqui" };
+    var ps = makeSkierParts(0, PLAYER_SKINS[2]);
+    var ns = {};
+    for (var j = 0; j < ps.length; j++) ns[ps[j].name] = true;
+    if (!ns.skiL || !ns.skiR || !ns.poleL || !ns.poleR)
+      return { ok: false, msg: "esquiador incompleto" };
+    var bp = boardPose(newSkierState(makeCourse("free", "easy", 4)), {}, null);
+    if (!bp.board) return { ok: false, msg: "pose sem prancha" };
+    if (bp.poleL) return { ok: false, msg: "pose com bastao" };
+    var sp = sitPose(M4.identity());
+    return ok(!!sp.board && !!sp.skiL && !!sp.poleL,
+      "prancha=" + !!bp.board + " sentado=" + (!!sp.skiL) + "+prancha=" + (!!sp.board));
+  });
+
+  test("mundo aberto: trilhas bifurcam da pista e reencontram", function(){
+    var c = makeCourse("world", "med", 55);
+    if (!c.trails || !c.trails.length)
+      return { ok: false, msg: "sem trilhas alternativas" };
+    var T = c.trails[0], pts = T.pts;
+    if (!T.name || !T.w) return { ok: false, msg: "trilha mal formada" };
+    /* boca e fim EXATAMENTE na pista principal (bifurcacao real) */
+    var d0 = Math.abs(pts[0].x - trackX(c, pts[0].s));
+    var dN = Math.abs(pts[pts.length - 1].x - trackX(c, pts[pts.length - 1].s));
+    if (d0 > 0.5 || dN > 0.5)
+      return { ok: false, msg: "boca/fim fora da pista (" + d0.toFixed(1) + "/" + dN.toFixed(1) + ")" };
+    /* corredor groomed: conta como pista (neve batida, sem powder) */
+    var mid = pts[3];
+    var pf = pisteFactor(c, mid.x, mid.s);
+    if (pf < 0.5) return { ok: false, msg: "corredor sem neve batida (pf=" + pf.toFixed(2) + ")" };
+    /* corredor LIMPO: nenhum obstaculo rigido dentro da trilha */
+    var bad = 0;
+    for (var i = 0; i < c.obstacles.length; i++){
+      var o = c.obstacles[i];
+      if ((o.t === "tree" || o.t === "rock") && c.trailAt(o.s, o.x)) bad++;
+    }
+    return ok(bad === 0, c.trails.length + " trilhas, pf=" + pf.toFixed(2) + ", no corredor: " + bad);
+  });
+
+  test("teleferico: turbo acelera a subida drasticamente", function(){
+    var c = makeCourse("world", "med", 55);
+    var L = null;
+    for (var i = 0; i < c.resort.lifts.length; i++)
+      if (c.resort.lifts[i].type === "chair"){ L = c.resort.lifts[i]; break; }
+    if (!L) return { ok: false, msg: "sem cadeirinha" };
+    var st = newSkierState(c);
+    st.s = L.s1; st.z = -L.s1; st.x = liftX(L, c, L.s1);
+    st.y = heightAt(c, st.x, st.s); st.prevGh = st.y;
+    st.speed = 0; st.grounded = true; st.crashT = 0;
+    var gAnt = { course: Game.course, st: Game.st, state: Game.state,
+                 time: Game.time, ride: Game.ride, cam: Game.cam };
+    var semAudio = (typeof audioEvent === "undefined");
+    if (semAudio){
+      if (typeof globalThis === "object" && globalThis) globalThis.audioEvent = function(){};
+      else window.audioEvent = function(){};
+    }
+    Game.course = c; Game.st = st; Game.state = "running";
+    Game.time = 123.4; Game.ride = null; Game.cam = null;
+    Game.tryRide();
+    if (!Game.ride){ restaura(); return { ok: false, msg: "nao embarcou" }; }
+    Game.ride.turbo = true;                     // 70x
+    var frames = 0;
+    while (Game.ride && frames < 60000){ Game.time += 1/60; Game.rideStep(1/60); frames++; }
+    /* sem turbo seriam ~span/vel*60 = 17-26 mil frames; com 70x cai para ~300 */
+    var okT = !Game.ride && st.grounded && st.s <= L.s0 + 12 && frames < 1500;
+    function restaura(){
+      Game.course = gAnt.course; Game.st = gAnt.st; Game.state = gAnt.state;
+      Game.time = gAnt.time; Game.ride = gAnt.ride; Game.cam = gAnt.cam;
+    }
+    restaura();
+    return ok(okT, "frames=" + frames + " (sem turbo: ~" +
+      Math.round((L.s1 - L.s0) / L.speed * 60) + ")");
+  });
+
   var pass = 0, fail = 0;
   for (var i = 0; i < T.length; i++){ if (T[i].ok) pass++; else fail++; }
   return { tests: T, pass: pass, fail: fail, total: T.length };
@@ -4516,6 +5771,14 @@ var QUALITY_PRESETS = {
   vhigh:{ pr: 2.0,  viewDist: 1120, fogNear: 175, chunkX: 2.4, chunkS: 1.6, skipAO: false, ahead: 12, snow: 600, spray: 320 }
 };
 function glPreset(){ return QUALITY_PRESETS[GL.quality] || QUALITY_PRESETS.med; }
+/* distancia de vista + inicio da neblina. O Mundo Aberto amplia os dois
+   (mais horizonte para navegar); presete de qualidade manda no resto. */
+function applyViewDist(){
+  var P = glPreset();
+  var k = GL.worldBoost || 1;
+  GL.viewDist = P.viewDist * k;
+  GL.fogNear = P.fogNear * k;
+}
 
 var MAIN_VS =
   "attribute vec3 aPos; attribute vec3 aNorm; attribute vec3 aCol; attribute vec2 aMeta;" +
@@ -4696,7 +5959,7 @@ function glSetQuality(q){
   GL.quality = q;
   var P = glPreset();
   GL.pr = Math.min(window.devicePixelRatio || 1, P.pr);
-  GL.viewDist = P.viewDist; GL.fogNear = P.fogNear;
+  applyViewDist();
   glResize();
 }
 function glResize(){
@@ -4905,14 +6168,18 @@ var SIGN_STAR_ON = String.fromCharCode(9733);   // estrela preenchida
 var SIGN_STAR_OFF = String.fromCharCode(9734);   // estrela vazia
 function buildSign(sg, course){
   var ctx = GL.ctx;
-  var gy = heightAt(course, sg.x, sg.s);
-  var y0 = gy + 1.30, y1 = y0 + 1.28, hw = 0.98;
   var a = 0.55;                                  // gira o painel para a pista
+  var hw = 0.98;
   var wx = Math.cos(a), wz = sg.side * Math.sin(a);
+  /* cantos seguem o TERRENO deles: o painel acompanha a encosta e os
+     postes (desenhados no chunk, nos MESMOS cantos) encostam na borda */
+  var cxL = sg.x - wx * hw, cxR = sg.x + wx * hw;
+  var y0L = heightAt(course, cxL, sg.s) + 1.30;
+  var y0R = heightAt(course, cxR, sg.s) + 1.30;
   var pos = [];
   function corner(sx2, yv){ pos.push(sg.x + sx2 * wx * hw, yv, -sg.s + sx2 * wz * hw); }
-  corner(-1, y0); corner(1, y0); corner(1, y1);
-  corner(-1, y0); corner(1, y1); corner(-1, y1);
+  corner(-1, y0L); corner(1, y0R); corner(1, y0R + 1.28);
+  corner(-1, y0L); corner(1, y0R + 1.28); corner(-1, y0L + 1.28);
   var uv = [0,1, 1,1, 1,0, 0,1, 1,0, 0,0];   // v invertido: topo da imagem no topo do painel
   var vb = ctx.createBuffer();
   ctx.bindBuffer(ctx.ARRAY_BUFFER, vb);
@@ -5290,6 +6557,13 @@ function audioUpdate(st, inp, dt){
     AudioSys.slide.filt.frequency.setTargetAtTime(700 + sp * 600, t, 0.2);
   } catch (e){ /* audio secundario: falha nao derruba o jogo */ }
 }
+/* zera a trilha de velocidade (vento/deslize) quando a fisica do
+   esquiador NAO roda neste frame - painel do tutorial, teleferico,
+   pausa, menu, resultados. Sem isso o som da aceleracao da descida
+   continuava "preso" tocando nesses cenarios. */
+function audioDuck(dt){
+  audioUpdate({ speed: 0, grounded: false, crashT: 1 }, null, dt);
+}
 function blip(freq, dur, type, vol){
   if (!AudioSys.ready || AudioSys.muted) return;
   try {
@@ -5369,6 +6643,8 @@ function audioEvent(ev){
     case "crash": thump(0.9); blip(120, 0.3, "sawtooth", 0.2); break;
     case "nearmiss": blip(1150, 0.07, "sine", 0.08); break;
     case "brush": chff(); break;
+    case "crowdbump": thump(0.3); break;          // esbarrar na plateia: toquezinho
+    case "explode": thump(0.9); blip(60, 0.5, "sawtooth", 0.3); break;  // 400 km/h: BOOM
     case "cheer": cheer(ev.power || 1); break;
     case "finish": blip(660, 0.14, "square", 0.2); setTimeout(function(){ blip(880, 0.2, "square", 0.2); }, 140); break;
     case "dnf": blip(220, 0.4, "sawtooth", 0.25); break;
@@ -5387,7 +6663,7 @@ var Input = {
 };
 var GAME_KEYCODES = {
   KeyA: 1, KeyD: 1, KeyW: 1, KeyS: 1, ArrowLeft: 1, ArrowRight: 1, ArrowUp: 1, ArrowDown: 1,
-  Space: 1, ShiftLeft: 1, ShiftRight: 1, KeyC: 1, KeyR: 1, KeyH: 1, Escape: 1, F3: 1, Backquote: 1
+  Space: 1, ShiftLeft: 1, ShiftRight: 1, KeyC: 1, KeyE: 1, KeyF: 1, KeyR: 1, KeyH: 1, Escape: 1, F3: 1, Backquote: 1
 };
 function inputInit(){
   window.addEventListener("keydown", function(e){
@@ -5424,6 +6700,14 @@ function inputInit(){
   }
   var tp = document.getElementById("t-pause");
   if (tp) tp.addEventListener("pointerdown", function(e){ e.preventDefault(); onKeyPress("Escape"); });
+  /* botao LIFT (toque): aparece no Mundo Aberto, embarca no teleferico */
+  var tl = document.getElementById("t-lift");
+  if (tl) tl.addEventListener("pointerdown", function(e){
+    e.preventDefault(); audioEnsure(); audioResume();
+    /* embarca; se ja esta no teleferico, o toque liga o TURBO */
+    if (Game.ride) Game.rideTurbo();
+    else onKeyPress("KeyE");
+  });
   // impede scroll/zoom por toque fora dos botoes
   document.addEventListener("touchmove", function(e){
     if (Game.state === "running") e.preventDefault();
@@ -5507,15 +6791,59 @@ function hudTick(dt){
     if (hudMsgT <= 0) $("hud-msg").classList.remove("show");
   }
 }
+/* aviso GRANDE e pulsante no centro-baixo da tela para as duas acoes
+   de teleferico: EMBARCAR (E, no chao perto da estacao de base) e
+   TURBO (F, durante a subida). Roda todo frame enquanto corre. */
+function hudPrompt(html){
+  var el = $("hud-prompt");
+  if (!el) return;
+  if (!html){ el.classList.remove("show"); el.innerHTML = ""; return; }
+  el.innerHTML = html;
+  el.classList.add("show");
+}
+function hudPromptTick(c, st){
+  if (!st || st.crashT > 0 || st.finished){ hudPrompt(null); return; }
+  if (Game.ride){
+    hudPrompt(Game.ride.turbo ? null :
+      '<span class="kbadge">F</span>TURBO \u2014 acelerar a subida');
+    return;
+  }
+  if (c && c.resort && c.resort.lifts && liftBoardable(c, st))
+    hudPrompt('<span class="kbadge">E</span>EMBARCAR NO TELEF\u00c9RICO');
+  else
+    hudPrompt(null);
+}
 function hudUpdate(){
   var st = Game.st, sc = Game.sc, c = Game.course;
   if (!st || !c) return;
-  $("hud-speed").firstElementChild.textContent = Math.round(st.speed * 3.6);
-  $("hud-time").firstElementChild.textContent = fmtTime(Game.runTime);
-  $("hud-score").firstElementChild.textContent = Math.round(sc.pts);
-  $("hud-combo").textContent = sc.mult > 1 ? ("COMBO \u00d7" + sc.mult.toFixed(1)) : "";
+  var kmh = Math.round(st.speed * 3.6);
+  $("hud-speed").firstElementChild.textContent = kmh;
+  /* barra de velocidade: leitura periferica instantanea (enche em
+     160 km/h; acima disso quem avisa e a vinheta de fogo do burn) */
+  var sb = $("hud-speedbar");
+  if (sb) sb.style.width = Math.min(100, 100 * kmh / 160) + "%";
+  /* Mundo Aberto: sem cronometro, sem pontos e sem combo - so
+     distancia percorrida e altitude (sem indicadores de corrida) */
+  var world = c.mode === "world";
+  $("hud-time").style.visibility = world ? "hidden" : "visible";
+  $("hud-score").style.visibility = world ? "hidden" : "visible";
+  $("hud-combo").style.visibility = (!world && sc.mult > 1) ? "visible" : "hidden";
+  if (!world){
+    $("hud-time").firstElementChild.textContent = fmtTime(Game.runTime);
+    $("hud-score").firstElementChild.textContent = Math.round(sc.pts);
+    $("hud-combo").textContent = sc.mult > 1 ? ("COMBO \u00d7" + sc.mult.toFixed(1)) : "";
+  }
   var sub = "";
-  if (c.mode === "slalom"){
+  if (world){
+    /* altitude REALISTA: base do vale + 950 m (o terreno comeca em 0
+       no topo e desce; sem o offset o fundo mostraria valores negativos) */
+    var altV = Math.round(st.y - baseHeight(c, c.length) + 950);
+    sub = "Mundo Aberto \u2022 dist\u00e2ncia <b>" + fmtDist(st.dist) +
+          "</b> \u2022 alt <b>" + altV + " m</b>";
+    if (Game.ride)
+      sub = (Game.ride.lift.type === "gondola" ? "G\u00f4ndola" : "Cadeirinha") +
+            " \u2022 <b>F</b> acelera a subida" + (Game.ride.turbo ? " (turbo!)" : "");
+  } else if (c.mode === "slalom"){
     sub = "Port\u00f5es <b>" + st.gateIdx + "/" + c.gates.length + "</b>";
     if (sc.misses) sub += " \u2022 perdidos <b>" + sc.misses + "</b>";
   } else {
@@ -5578,7 +6906,7 @@ function diagRender(){
   };
 }
 /* ---------- recordes ---------- */
-var MODE_LABEL = { slalom: "Slalom", free: "Corrida Livre", endurance: "Estilo" };
+var MODE_LABEL = { slalom: "Slalom", free: "Corrida Livre", endurance: "Estilo", world: "Mundo Aberto" };
 var DIFF_LABEL = { easy: "F\u00e1cil", med: "M\u00e9dio", hard: "Dif\u00edcil", extremo: "Extremo" };
 var TRACK_LABEL = { fixed: "Pista fixa", rand: "Pista aleat\u00f3ria" };
 function renderRecords(){
@@ -5613,8 +6941,10 @@ function gradeFor(mode, stats){
   if (stats.dnf) return "DNF";
   var g = "F";
   if (mode === "slalom" || mode === "free"){
-    // Slalom e Corrida Livre: nota por TEMPO (ritmo de referencia por modo)
-    var par = stats.length / (mode === "slalom" ? 13 : 21);
+    // Slalom e Corrida Livre: nota por TEMPO (ritmo de referencia por modo).
+    // Exigencia muito mais dura: slalom 16,5 m/s de par (era 13, +27%) e
+    // Corrida Livre 32 m/s (era 21, +52%) - nota boa agora exige linha boa.
+    var par = stats.length / (mode === "slalom" ? 16.5 : 32);
     var f = par / stats.finalTime;
     if (mode === "slalom") f *= (1 - 0.06 * stats.misses);
     if (f >= 1.12 && (mode !== "slalom" || stats.misses === 0)) g = "S";
@@ -5674,12 +7004,204 @@ function selSave(){
   Game.save.settings.mode = Game.mode;
   Game.save.settings.diff = Game.diff;
   Game.save.settings.track = Game.trackMode;
+  Game.save.settings.gear = Game.gear;
+  Game.save.settings.skin = Game.skin;
   persistSave(Game.save);
+}
+/* reconstroi as malhas do JOGADOR a partir do equipamento + skin atuais
+   (esqui ou snowboard, paleta PLAYER_SKINS). Bots nao mudam. */
+function rebuildPlayerMeshes(){
+  if (!GL.ctx) return;
+  var parts = Game.gear === "board"
+    ? makeSnowboardParts(PLAYER_SKINS[Game.skin || 0])
+    : makeSkierParts(0, PLAYER_SKINS[Game.skin || 0]);
+  var old = Game.skier || {};
+  for (var k in old) freeMesh(old[k]);
+  Game.skier = {};
+  for (var i = 0; i < parts.length; i++)
+    Game.skier[parts[i].name] = uploadMesh(parts[i].geo);
+}
+/* painel lateral do menu: PREVIA 3D REAL do personagem - um WebGL
+   proprio em mini-canvas com as MESMAS malhas e skins do jogo
+   (makeSkierParts / makeSnowboardParts + skierPose / boardPose).
+   Gira sozinho; arraste para orbitar (yaw + pitch) e role a roda para
+   zoom. Redesenha a cada troca de equipamento ou skin; sem DOM ou sem
+   GL (harness) simplesmente nao faz nada. */
+var CP3D = null;
+function cp3dBuildProg(){
+  var ctx = CP3D.ctx;
+  function sh(type, src){
+    var s = ctx.createShader(type);
+    ctx.shaderSource(s, src);
+    ctx.compileShader(s);
+    return s;
+  }
+  var vs = sh(ctx.VERTEX_SHADER,
+    "attribute vec3 aPos; attribute vec3 aNorm; attribute vec3 aCol;" +
+    "uniform mat4 uVP; uniform mat4 uModel;" +
+    "varying vec3 vCol; varying vec3 vNorm;" +
+    "void main(){" +
+    "  gl_Position = uVP * (uModel * vec4(aPos, 1.0));" +
+    "  vCol = aCol; vNorm = mat3(uModel) * aNorm;" +
+    "}");
+  var fs = sh(ctx.FRAGMENT_SHADER,
+    "precision mediump float;" +
+    "varying vec3 vCol; varying vec3 vNorm;" +
+    "void main(){" +
+    "  vec3 n = normalize(vNorm);" +
+    "  float d = max(dot(n, normalize(vec3(-0.35, 0.82, -0.45))), 0.0);" +
+    "  float d2 = max(dot(n, normalize(vec3(0.4, 0.15, 0.8))), 0.0);" +
+    "  gl_FragColor = vec4(vCol * (0.34 + 0.72 * d + 0.22 * d2), 1.0);" +
+    "}");
+  var p = ctx.createProgram();
+  ctx.attachShader(p, vs);
+  ctx.attachShader(p, fs);
+  ctx.linkProgram(p);
+  CP3D.prog = {
+    p: p,
+    a: { aPos: ctx.getAttribLocation(p, "aPos"),
+         aNorm: ctx.getAttribLocation(p, "aNorm"),
+         aCol: ctx.getAttribLocation(p, "aCol") },
+    u: { uVP: ctx.getUniformLocation(p, "uVP"),
+         uModel: ctx.getUniformLocation(p, "uModel") }
+  };
+}
+function cp3dBuildParts(board, pal){
+  var ctx = CP3D.ctx, i;
+  for (i = 0; i < CP3D.parts.length; i++){
+    ctx.deleteBuffer(CP3D.parts[i].vb);
+    ctx.deleteBuffer(CP3D.parts[i].ib);
+  }
+  CP3D.parts = [];
+  /* mesmas malhas do jogo; layout de vertice identico (44 bytes) */
+  var ps = board ? makeSnowboardParts(pal) : makeSkierParts(0, pal);
+  for (i = 0; i < ps.length; i++){
+    var g = ps[i].geo;
+    var vb = ctx.createBuffer();
+    ctx.bindBuffer(ctx.ARRAY_BUFFER, vb);
+    ctx.bufferData(ctx.ARRAY_BUFFER, g.v, ctx.STATIC_DRAW);
+    var ib = ctx.createBuffer();
+    ctx.bindBuffer(ctx.ELEMENT_ARRAY_BUFFER, ib);
+    ctx.bufferData(ctx.ELEMENT_ARRAY_BUFFER, g.i, ctx.STATIC_DRAW);
+    CP3D.parts.push({ name: ps[i].name, vb: vb, ib: ib,
+                      count: g.i.length, i32: g.i instanceof Uint32Array });
+  }
+}
+function cp3dDraw(){
+  var ctx = CP3D.ctx, cv = CP3D.canvas, P = CP3D.prog;
+  if (!P) return;
+  if (!CP3D.drag) CP3D.yaw += 0.008;      // rotacao automatica suave
+  var aspect = cv.width / cv.height;
+  var proj = M4.perspective(0.95, aspect, 0.1, 60);
+  var cp = Math.cos(CP3D.pitch), sp = Math.sin(CP3D.pitch);
+  var eye = [Math.sin(CP3D.yaw) * cp * CP3D.dist,
+             0.9 + sp * CP3D.dist,
+             Math.cos(CP3D.yaw) * cp * CP3D.dist];
+  var view = M4.lookAt(eye, [0, 0.85, 0], [0, 1, 0]);
+  var vp = M4.mul(proj, view);
+  ctx.clearColor(0, 0, 0, 0);
+  ctx.clear(ctx.COLOR_BUFFER_BIT | ctx.DEPTH_BUFFER_BIT);
+  ctx.enable(ctx.DEPTH_TEST);
+  ctx.useProgram(P.p);
+  ctx.uniformMatrix4fv(P.u.uVP, false, vp);
+  /* estado estavel de pose (parado no chao), mesmo pipeline do jogo */
+  var st = { x: 0, y: 0, z: 0, yaw: 0, lean: 0, brushT: 0, brushDir: 0,
+             grounded: true, crashT: 0, flipOn: false, flipType: null,
+             flipT: 0, flipDeg: 0, speed: 0, s: 40 };
+  var anim = { crouch: 0.14, armSwing: 0, airPitch: 0, poling: 0,
+               landFlex: 0, tuck: false, grabT: 0 };
+  var pose = Game.gear === "board" ? boardPose(st, anim, null)
+                                  : skierPose(st, anim, null);
+  for (var i = 0; i < CP3D.parts.length; i++){
+    var pt = CP3D.parts[i];
+    if (!pose[pt.name]) continue;
+    ctx.uniformMatrix4fv(P.u.uModel, false, pose[pt.name]);
+    ctx.bindBuffer(ctx.ARRAY_BUFFER, pt.vb);
+    ctx.enableVertexAttribArray(P.a.aPos);
+    ctx.vertexAttribPointer(P.a.aPos, 3, ctx.FLOAT, false, 44, 0);
+    ctx.enableVertexAttribArray(P.a.aNorm);
+    ctx.vertexAttribPointer(P.a.aNorm, 3, ctx.FLOAT, false, 44, 12);
+    ctx.enableVertexAttribArray(P.a.aCol);
+    ctx.vertexAttribPointer(P.a.aCol, 3, ctx.FLOAT, false, 44, 24);
+    ctx.bindBuffer(ctx.ELEMENT_ARRAY_BUFFER, pt.ib);
+    if (pt.i32) ctx.drawElements(ctx.TRIANGLES, pt.count, ctx.UNSIGNED_INT, 0);
+    else ctx.drawElements(ctx.TRIANGLES, pt.count, ctx.UNSIGNED_SHORT, 0);
+  }
+}
+function cp3dLoop(){
+  if (!CP3D) return;
+  requestAnimationFrame(cp3dLoop);
+  var host = document.getElementById("char-preview");
+  if (!host || host.offsetWidth === 0) return;   // painel oculto: pula
+  try { cp3dDraw(); } catch (e){ /* contexto perdido: para na proxima */ }
+}
+function updateCharPreview(){
+  var host = document.getElementById("char-preview");
+  if (!host) return;                    // sem DOM (harness): nada a fazer
+  var pal = PLAYER_SKINS[Game.skin || 0] || PLAYER_SKINS[0];
+  var board = Game.gear === "board";
+  if (!CP3D){
+    var cv = document.createElement("canvas");
+    cv.width = 176; cv.height = 220;
+    host.innerHTML = '<div class="cp-head"></div>';
+    host.appendChild(cv);
+    var nm = document.createElement("div");
+    nm.className = "cp-name";
+    var sb = document.createElement("div");
+    sb.className = "cp-sub";
+    sb.textContent = "Arraste para girar";
+    host.appendChild(nm);
+    host.appendChild(sb);
+    var ctx = cv.getContext("webgl") || cv.getContext("experimental-webgl");
+    if (!ctx) return;
+    CP3D = { canvas: cv, ctx: ctx, prog: null, parts: [],
+             yaw: 0.6, pitch: 0.32, dist: 4.6, drag: false,
+             lx: 0, ly: 0, headEl: host.firstChild, nameEl: nm, subEl: sb,
+             looping: false };
+    cp3dBuildProg();
+    /* arrastar = orbitar; roda do mouse / pinca = zoom */
+    cv.addEventListener("mousedown", function(e){
+      CP3D.drag = true; CP3D.lx = e.clientX; CP3D.ly = e.clientY;
+      e.preventDefault();
+    });
+    window.addEventListener("mousemove", function(e){
+      if (!CP3D || !CP3D.drag) return;
+      CP3D.yaw += (e.clientX - CP3D.lx) * 0.012;
+      CP3D.pitch = clamp(CP3D.pitch + (e.clientY - CP3D.ly) * 0.008, -0.25, 1.15);
+      CP3D.lx = e.clientX; CP3D.ly = e.clientY;
+    });
+    window.addEventListener("mouseup", function(){ if (CP3D) CP3D.drag = false; });
+    cv.addEventListener("touchstart", function(e){
+      if (!e.touches.length) return;
+      CP3D.drag = true; CP3D.lx = e.touches[0].clientX; CP3D.ly = e.touches[0].clientY;
+      e.preventDefault();
+    }, { passive: false });
+    cv.addEventListener("touchmove", function(e){
+      if (!CP3D || !CP3D.drag || !e.touches.length) return;
+      CP3D.yaw += (e.touches[0].clientX - CP3D.lx) * 0.012;
+      CP3D.pitch = clamp(CP3D.pitch + (e.touches[0].clientY - CP3D.ly) * 0.008, -0.25, 1.15);
+      CP3D.lx = e.touches[0].clientX; CP3D.ly = e.touches[0].clientY;
+      e.preventDefault();
+    }, { passive: false });
+    cv.addEventListener("touchend", function(){ if (CP3D) CP3D.drag = false; });
+    cv.addEventListener("wheel", function(e){
+      CP3D.dist = clamp(CP3D.dist + (e.deltaY > 0 ? 0.45 : -0.45), 3.0, 7.5);
+      e.preventDefault();
+    }, { passive: false });
+    cv.addEventListener("webglcontextlost", function(e){ e.preventDefault(); CP3D = null; });
+  }
+  CP3D.headEl.textContent = board ? "Snowboard" : "Esqui";
+  CP3D.nameEl.textContent = pal.name || "Classico";
+  cp3dBuildParts(board, pal);
+  if (!CP3D.looping){ CP3D.looping = true; cp3dLoop(); }
 }
 function uiInit(){
   segInit("seg-mode", function(v){ Game.mode = v; selSave(); });
   segInit("seg-diff", function(v){ Game.diff = v; selSave(); });
   segInit("seg-track", function(v){ Game.trackMode = v; selSave(); });
+  /* equipamento e skin: salvam na hora e reconstroem o modelo do jogador */
+  segInit("seg-gear", function(v){ Game.gear = v; selSave(); rebuildPlayerMeshes(); updateCharPreview(); });
+  segInit("seg-skin", function(v){ Game.skin = Number(v) || 0; selSave(); rebuildPlayerMeshes(); updateCharPreview(); });
   segInit("seg-quality", function(v){ Game.pendingQuality = v; });
   segInit("seg-cam", function(v){ Game.pendingCam = v; });
   $("btn-start").addEventListener("click", function(){ audioEnsure(); audioResume(); uiClick(); Game.startRun(); });
@@ -5715,6 +7237,7 @@ var IDENT = M4.identity();
 var Game = {
   state: "boot", save: null,
   mode: "slalom", diff: "med", trackMode: "fixed",
+  gear: "ski", skin: 0, ride: null, rideHintT: 0, gondInterior: null,
   pendingQuality: null, pendingCam: null, settingsFrom: "menu",
   course: null, st: null, sc: null, cam: null,
   chunks: null, bgMesh: null, banner: null,
@@ -5726,10 +7249,10 @@ var Game = {
   skid: { on: false, t: 0 },
   anim: { crouch: 0.15, armSwing: 0, airPitch: 0, poling: 0, landFlex: 0 },
   menuCourse: null, menuSt: null, menuCam: null,
-  bots: [], botSkins: {}, signs: [], liftMeshes: null
+  bots: [], botSkins: {}, botBoardSkins: {}, signs: [], liftMeshes: null
 };
 
-function hudShow(v){ var el = $("hud"); if (el) el.classList.toggle("hidden", !v); }
+function hudShow(v){ var el = $("hud"); if (el) el.classList.toggle("hidden", !v); if (!v) hudPrompt(null); }
 
 function audioSilence(){
   if (!AudioSys.ready) return;
@@ -5763,6 +7286,9 @@ function createFXSystems(){
 
 /* ---------- curso visual: chunks + fundo + banner + placas + telefericos ---------- */
 Game.setupCourseVisual = function(course){
+  /* Mundo Aberto: horizonte mais largo (efeito proprio do modo) */
+  GL.worldBoost = course.mode === "world" ? 1.3 : 1;
+  applyViewDist();
   if (Game.chunks) Game.chunks.disposeAll();
   Game.chunks = new ChunkManager(course);
   if (Game.bgMesh) freeMesh(Game.bgMesh);
@@ -5831,9 +7357,15 @@ function botMake(i, c){
   st.yaw = Math.atan2(-g0[0], -(-g0[1])) * 0 + Math.atan2(-g0[0], g0[1]) * 0;
   st.yaw = Math.atan2(-g0[0], -(-g0[1]));
   st.yaw = Math.atan2(-g0[0], g0[1]);
+  /* bots HETEROGENEOS: ~45% andam de prancha (pose/malha proprias);
+     vMax/look0/carveA dao a cada bot um ritmo e um carve proprios */
   return { st: st, skill: skill, trait: trait,
            pal: 1 + (i % 4), phase: r() * 6.2832,
-           lane: (r() * 2 - 1) * 0.55, restS: 240 + r() * (c.length * 0.55),
+           board: r() < 0.45,
+           lane: (r() * 2 - 1) * 0.85,
+           vMax: 14 + skill * 15 + r() * 7,
+           look0: r() * 16, carveA: 2 + r() * 5.5,
+           restS: 240 + r() * (c.length * 0.55),
            state: "run", restT: 0, nJumps: 0,
            anim: { crouch: 0.2, armSwing: 0, airPitch: 0, poling: r() * 6.28, landFlex: 0 } };
 }
@@ -5857,7 +7389,7 @@ function botRespawn(b, c, playerS){
 function botsInit(c){
   Game.bots = [];
   if (c.safeMode) return;
-  var n = c.mode === "slalom" ? 4 : 6;
+  var n = c.mode === "slalom" ? 15 : 24;    // 3x: vale movimentado de novo
   for (var i = 0; i < n; i++) Game.bots.push(botMake(i, c));
 }
 function botInput(b, c, dt){
@@ -5867,9 +7399,10 @@ function botInput(b, c, dt){
     if (b.restT <= 0) b.state = "run";
     return { steer: 0, tuck: false, brake: true, skid: false, jump: false };
   }
-  var look = 28 + b.skill * 26;
+  var look = 24 + b.skill * 20 + (b.look0 || 0);   // olhar proprio de cada bot
   var tx = trackX(c, st.s + look) + b.lane * trackW(c, st.s + look) * 0.45 +
-           Math.sin(st.s * 0.012 + b.phase) * 3.5;
+           Math.sin(st.s * 0.012 + b.phase) *
+           Math.min(b.carveA || 3.5, trackW(c, st.s + look) * 0.22);
   /* gargalos: antecipa o corredor em duas distancias de busca; DENTRO
      da zona mira curto (12 m) com resposta forte - o corredor serpenteia */
   var K = c.chokeAt ? (c.chokeAt(st.s + look * 0.65) || c.chokeAt(st.s + look * 2.4)) : null;
@@ -5937,13 +7470,51 @@ function botInput(b, c, dt){
       }
     }
   }
+  /* teto de velocidade proprio: acima do seu vMax o bot freia em vez
+     de ir alem da propria habilidade */
+  if (st.speed > (b.vMax || 30)){ inp.brake = true; inp.tuck = false; }
   return inp;
+}
+/* bot dentro do elevador principal: sobe de gondola no cabo (como o
+   jogador) e desembarca no topo para continuar descendo. Enquanto
+   sobe fica INVISIVEL (esta dentro da cabine). */
+function botLiftStep(b, c, dt){
+  var LG = c.grandLift;
+  b.liftS -= dt * LG.speed * 1.5;   // cabo dos bots um pouco mais rapido
+  var st = b.st;
+  if (b.liftS <= LG.s0 + 6){
+    var ds = Math.max(LG.s0 - 14, 20);
+    st.s = ds; st.z = -ds;
+    st.x = trackX(c, ds) + ((b.phase * 5.1) % 2 - 1) * trackW(c, ds) * 0.4;
+    st.y = heightAt(c, st.x, ds); st.prevGh = st.y; st.prevS = ds;
+    st.vx = 0; st.vz = -(6 + b.skill * 8); st.vy = 0; st.speed = -st.vz;
+    st.grounded = true; st.airTime = 0; st.crashT = 0; st.stumbleT = 0;
+    st.finished = false; st.dnf = false; st.offT = 0;
+    st.colSet = {}; st.nmSet = {}; st.chSet = {};
+    var g0 = gradAt(c, st.x, ds);
+    st.yaw = Math.atan2(-g0[0], g0[1]);
+    b.state = "run"; b.restT = 0;
+    return;
+  }
+  st.s = b.liftS; st.z = -b.liftS;
+  st.x = liftX(LG, c, b.liftS) + (b.lane > 0 ? 1.85 : -1.85);
+  st.y = liftCableY(LG, c, b.liftS) - 2.4;
+  st.grounded = false; st.speed = 0;
 }
 function botsStep(c, dt){
   if (!Game.bots || !Game.bots.length) return;
   var playerS = Game.st ? Game.st.s : 0;
   for (var i = 0; i < Game.bots.length; i++){
     var b = Game.bots[i];
+    /* no elevador principal: sobe dentro da gondola e sai no topo */
+    if (b.state === "lift"){ botLiftStep(b, c, dt); continue; }
+    /* fundo do vale: bot chega ao terminal e embarca tambem */
+    if (c.grandLift && b.st.s > c.grandLift.s1 - 24){
+      b.state = "lift"; b.liftS = c.grandLift.s1;
+      continue;
+    }
+    /* fora da banda do jogador: so recicla (rodeio barato) */
+    if (Math.abs(b.st.s - playerS) > 420){ botRespawn(b, c, playerS); continue; }
     var inp = botInput(b, c, dt);
     try { physStep(b.st, inp, c, dt); }
     catch (e){ /* bot nunca derruba a partida */ }
@@ -5963,13 +7534,17 @@ function botsStep(c, dt){
     }
   }
   /* hitbox dos bots: encostar em outro esquiador empurha e troca momento
-     (colisao suave, sem queda ou penalidade) */
+     (colisao suave, sem queda ou penalidade). Bot na gondola nao conta */
   var plS = Game.st;
   for (var i = 0; i < Game.bots.length; i++){
-    var bi = Game.bots[i].st;
+    var b2 = Game.bots[i];
+    if (b2.state === "lift") continue;
+    var bi = b2.st;
     if (plS && plS.crashT <= 0 && bi.crashT <= 0 && !bi.finished) softCollideSkiers(plS, bi);
-    for (var j = i + 1; j < Game.bots.length; j++)
+    for (var j = i + 1; j < Game.bots.length; j++){
+      if (Game.bots[j].state === "lift") continue;
       softCollideSkiers(bi, Game.bots[j].st);
+    }
   }
 }
 function drawBots(){
@@ -5978,10 +7553,13 @@ function drawBots(){
   var playerS = Game.st ? Game.st.s : 0;
   for (var i = 0; i < Game.bots.length; i++){
     var b = Game.bots[i];
+    if (b.state === "lift") continue;             // dentro da gondola
     if (Math.abs(b.st.s - playerS) > 320) continue;   // cull: fora de vista
-    var skin = Game.botSkins[b.pal];
+    var bd = !!b.board;               // ~45% dos bots andam de prancha
+    var skin = bd ? Game.botBoardSkins[b.pal] : Game.botSkins[b.pal];
     if (!skin || !skin.torso) continue;
-    var pose = skierPose(b.st, b.anim, Game.course);
+    var pose = bd ? boardPose(b.st, b.anim, Game.course)
+                  : skierPose(b.st, b.anim, Game.course);
     for (var name in pose){
       if (skin[name]) drawMesh(skin[name], pose[name]);
     }
@@ -6034,20 +7612,36 @@ function drawLiftDyn(c){
     var mesh = L.type === "gondola" ? Game.liftMeshes.gondola : Game.liftMeshes.chair;
     var gap = L.gap;
     var n = Math.max(2, Math.floor(span / gap));
+    /* relogio do cabo: o lift ocupado pelo jogador usa o RELOGIO do
+       ride (com turbo) - o cabo INTEIRO acelera junto, e o carrier
+       desenhado e exatamente o que o jogador ocupa */
+    var tL = (Game.ride && Game.ride.lift === L) ? Game.ride.t : Game.time;
     for (var i = 0; i < n; i++){
-      var dir = (i % 2 === 0) ? 1 : -1;
-      var off = (i % 2 === 0) ? -0.55 : 0.55;
-      if (L.type === "gondola"){ off = (i % 2 === 0) ? -0.9 : 0.9; }
-      var s = L.s0 + (((Game.time * L.speed * dir) + i * gap * 2) % span + span) % span;
-      if (Math.abs(s - playerS) > 300) continue;
-      var x = liftX(L, c, s) + off, y = liftCableY(L, c, s), z = -s;
+      var p = liftCarrierPos(L, c, i, tL);
+      if (Math.abs(p.s - playerS) > 300) continue;
+      var x = p.x, y = p.y, z = -p.s;
       // orientacao segue a direcao do cabo + balanco suave
-      var dxs = liftX(L, c, s + 2) - liftX(L, c, s - 2);
+      var dxs = liftX(L, c, p.s + 2) - liftX(L, c, p.s - 2);
       var yawL = Math.atan2(dxs, 4);
-      var sway = Math.sin(Game.time * 1.4 + i * 1.9) * 0.045;
+      var sway = Math.sin(tL * 1.4 + i * 1.9) * 0.045;
       var M4b = M4.mul(M4.translation(x, y, z), M4.rotY(-yawL));
       M4b = M4.mul(M4b, M4.rotZ(sway));
-      for (var mi = 0; mi < mesh.length; mi++) drawMesh(mesh[mi], M4b);
+      if (Game.ride && Game.ride.lift === L && i === Game.ride.carrier && p.dir === -1){
+        /* carrier do jogador: cadeirinha normal + jogador sentado;
+           gondola = interior (a casca externa e pulada: a visao e de dentro) */
+        if (L.type === "gondola"){
+          if (Game.gondInterior)
+            for (var gi2 = 0; gi2 < Game.gondInterior.length; gi2++)
+              drawMesh(Game.gondInterior[gi2], M4b);
+        } else {
+          for (var mi2 = 0; mi2 < mesh.length; mi2++) drawMesh(mesh[mi2], M4b);
+          var seat = sitPose(M4b);
+          for (var pn in seat)
+            if (Game.skier[pn]) drawMesh(Game.skier[pn], seat[pn]);
+        }
+      } else {
+        for (var mi = 0; mi < mesh.length; mi++) drawMesh(mesh[mi], M4b);
+      }
     }
   }
 }
@@ -6077,6 +7671,7 @@ Game.beginRun = function(){
   Game.camMode = Game.save.settings.cam;
   Game.cam = newCamera(Game.camMode);
   Game.runTime = 0; Game.finishT = 0;
+  Game.ride = null; Game.rideHintT = 0;
   Game.trailT = 0; Game.sprayT = 0; Game.stuckT = 0; Game.rescueN = 0;
   Game.skid.on = false; Game.skid.t = 0;
   Game.anim = { crouch: 0.15, armSwing: 0, airPitch: 0, tuck: false, grabT: 0, poling: 0, landFlex: 0 };
@@ -6086,12 +7681,105 @@ Game.beginRun = function(){
   if (Game.spray) Game.spray.life.fill(0);
   showScreen(null); hudShow(true);
   Game.chokeWarn = {};
+  /* botao LIFT de toque so existe no Mundo Aberto */
+  var tl2 = $("t-lift");
+  if (tl2){ tl2.style.display = (c.mode === "world" && Input.isTouch) ? "" : "none"; tl2.textContent = "LIFT"; }
   if (!Game.tut) hudMsg(c.mode === "slalom" ? "ATRAVESSE OS PORT\u00d5ES NA ORDEM!" :
           c.mode === "free" ? "CORRIDA LIVRE: CUIDADO COM OS GARGALOS!" :
+          c.mode === "world" ? "Mundo Aberto: explore o vale!" :
                               "MODO ESTILO: TRUQUES VALEM PONTOS!", 2.2);
 };
 
 Game.restartRun = function(){ Game.beginRun(); };
+
+/* ---------- telefericos interativos (Mundo Aberto) ----------
+   Embarque na estacao de BASE (fundo do vale): o jogador e ancorado a um
+   carrier real do cabo que sobe - a cadeirinha/cabine ja desenhada pelo
+   jogo e a que ele ocupa. Cadeirinha = camera externa com o vale ao
+   fundo; gondola = visao DENTRO da cabine (interior proprio). */
+Game.tryRide = function(L, force){
+  var G = Game, c = G.course, st = G.st;
+  if (!c || !st || G.state !== "running" || G.ride) return;
+  if (c.mode !== "world") return;
+  if (!force) L = liftBoardable(c, st);
+  if (!L) return;
+  var n = liftUpCount(L);
+  var best = -1, bestD = 1e9;
+  for (var i = 1; i < n; i += 2){          // lado que sobe (dir = -1)
+    var p = liftCarrierPos(L, c, i, G.time);
+    var d = Math.abs(p.s - L.s1);
+    if (d < bestD){ bestD = d; best = i; }
+  }
+  if (best < 0) return;
+  /* relogio proprio do ride: o turbo (tecla F) adianta o tempo do CABO
+     inteiro, sem tocar no relogio do mundo */
+  G.ride = { lift: L, carrier: best, prevS: 1e9, t: G.time, turbo: false };
+  st.vx = 0; st.vz = 0; st.vy = 0; st.speed = 0; st.grounded = false;
+  hudMsg((L.grand ? "Terminal do vale: subida obrigat\u00f3ria" :
+          (L.type === "gondola" ? "G\u00f4ndola: aproveite a vista" : "Cadeirinha: subindo")) +
+         " \u2014 <b>F</b> acelera", 2.6);
+  var tl3 = document.getElementById("t-lift");
+  if (tl3 && Input.isTouch){ tl3.textContent = "TURBO"; }
+  audioEvent({ type: "gate" });
+};
+/* turbo do teleferico: alterna a velocidade do cabo do ride (70x) */
+Game.rideTurbo = function(){
+  var G = Game;
+  if (!G.ride) return;
+  G.ride.turbo = !G.ride.turbo;
+  hudMsg(G.ride.turbo ? "TURBO! Subida acelerada" : "Subida em velocidade normal", 1.6);
+};
+function rideCamSet(cam, px, py, pz, lx, ly, lz, fov){
+  if (!cam.init){ cam.pos = [px, py, pz]; cam.look = [lx, ly, lz]; cam.init = true; }
+  cam.pos[0] = px; cam.pos[1] = py; cam.pos[2] = pz;
+  cam.look[0] = lx; cam.look[1] = ly; cam.look[2] = lz;
+  cam.fov = fov;
+  cam.shake = 0;
+}
+Game.rideStep = function(dt){
+  var G = Game, c = G.course, st = G.st, R = G.ride;
+  if (!R || !st){ G.ride = null; return; }
+  var L = R.lift;
+  /* relogio do cabo do ride: avanca 70x mais rapido com o turbo (F) */
+  R.t += dt * (R.turbo ? 70 : 1);
+  var p = liftCarrierPos(L, c, R.carrier, R.t);
+  st.x = p.x; st.y = p.y; st.z = -p.s; st.s = p.s;
+  st.speed = 0; st.grounded = false; st.airTime = 0;
+  st.vx = 0; st.vz = 0; st.vy = 0;
+  if (G.cam){
+    if (L.type === "gondola"){
+      /* visao interna: olho dentro da cabine, na altura da janela,
+         mirando a linha do cabo rumo ao topo */
+      var ts = Math.max(p.s - 45, L.s0);
+      rideCamSet(G.cam, st.x, st.y - 1.25, st.z,
+                 liftX(L, c, ts), liftCableY(L, c, ts) - 1.25, -ts, 66);
+    } else {
+      /* cadeirinha: camera de fora, a frente e acima do assento -
+         o jogador sentado aparece com o vale la embaixo */
+      var cx = st.x + L.side * 4.2, cz = st.z + 7.0;
+      var cy = Math.max(st.y + 2.4, heightAt(c, cx, -cz) + 1.3);
+      rideCamSet(G.cam, cx, cy, cz, st.x, st.y - 0.5, st.z - 4.0, 62);
+    }
+  }
+  /* chegou ao topo (ou o carrier deu a volta): desembarca na neve */
+  if (p.s <= L.s0 + 2.5 || p.s > R.prevS + 100){
+    G.ride = null;
+    var ds = Math.max(L.s0 - 10, 14);
+    st.s = ds; st.z = -ds;
+    st.x = trackX(c, ds);
+    st.y = heightAt(c, st.x, ds); st.prevGh = st.y;
+    st.grounded = true; st.crashT = 0; st.stumbleT = 0;
+    st.vx = 0; st.vz = -2; st.vy = 0; st.yaw = 0;
+    st.speed = 2;
+    if (G.cam) G.cam.init = false;
+    var tl4 = document.getElementById("t-lift");
+    if (tl4 && Input.isTouch) tl4.textContent = "LIFT";
+    hudMsg("Topo! Boa descida", 1.8);
+    audioEvent({ type: "recover" });
+    return;
+  }
+  R.prevS = p.s;
+};
 
 /* ---------------- tutorial interativo ---------------- */
 Game.tutShow = function(v){
@@ -6146,13 +7834,27 @@ Game.tutWarpStep = function(s){
 /* constroi o segmento de treino do passo (inclinacao por especificacao) */
 Game.tutSeg = function(s){
   var spec = TUT_SEGS[s.mode] || TUT_SEGS.train;
-  var course = makeCourse(spec.course, "easy", 777);
+  var course = makeCourse(spec.course, "easy", 777, { centerRamps: true });
   if (spec.slope < 1){ course.slope0 *= spec.slope; course.slopeAmp *= spec.slope; }
   Game.course = course;
   Game.setupCourseVisual(course);
   Game.beginRun();
   Game.tut.segMode = s.mode;
   if (s.warp) Game.tutWarpStep(s);
+  else Game.tutPlaceStart();
+};
+/* entrada de segmento SEM warp (treino/paineis): posiciona o jogador em
+   TUT_START_S e a camera JA nasce atras dele, mirando morro abaixo -
+   o primeiro frame mostra so pista, sem vazio antes do inicio */
+Game.tutPlaceStart = function(){
+  Game.st = tutWarp(Game.course, TUT_START_S);
+  var st = Game.st, dx = Math.sin(st.yaw), dz = -Math.cos(st.yaw);
+  var cx = st.x - dx * 6.6, cz = st.z - dz * 6.6;
+  var gh = heightAt(Game.course, cx, clamp(-cz, 0, Game.course.length));
+  Game.cam.pos = [cx, Math.max(st.y + 2.7, gh + 1.35), cz];
+  Game.cam.look = [st.x + dx * 5.5, st.y + 1.25, st.z + dz * 5.5];
+  Game.cam.dir = [dx, 0, dz];
+  Game.cam.init = true;
 };
 /* vai para o passo i: painel pausa o jogo; acao posiciona/troca segmento */
 Game.tutGoto = function(i){
@@ -6343,6 +8045,12 @@ function onKeyPress(code){
     } else if (code === "KeyH"){
       var h = $("hud");
       if (h) h.classList.toggle("godmode");
+    } else if (code === "KeyE"){
+      /* embarque no teleferico (Mundo Aberto) */
+      Game.tryRide();
+    } else if (code === "KeyF"){
+      /* turbo da subida do teleferico */
+      Game.rideTurbo();
     }
   } else if (Game.state === "results" && code === "KeyR"){
     Game.restartRun();
@@ -6404,8 +8112,39 @@ function crowdNear(s){
 function stepGame(dt){
   var G = Game, st = G.st, c = G.course, sc = G.sc;
   var inp = gameInput();
-  /* painel do tutorial: mundo congelado ate continuar (Enter ou botao) */
-  if (G.tut && G.tutPause) return;
+  /* tutorial: pulos ampliados 10x (dominar truques com folga); fora dele,
+     fisica padrao - setado a cada frame, nao ha vazamento entre modos */
+  TUT_JUMP_BOOST = (G.tut && !G.tutPause) ? 10 : 1;
+  /* painel do tutorial: mundo congelado ate continuar (Enter ou botao);
+     a trilha de vento tambem para: sem fisica rodando, nada de som preso */
+  if (G.tut && G.tutPause){ audioDuck(dt); return; }
+  /* teleferico em curso: a fisica do esquiador fica suspensa; bots e
+     mundo seguem vivos durante a viagem */
+  if (G.ride){
+    G.runTime += dt;
+    G.rideStep(dt);
+    botsStep(c, dt);
+    G.spray.update(dt, 10.5);
+    G.trails.update(dt);
+    G.shadow.update(c, st);
+    G.chunks.ensure(st.s, 2);
+    audioDuck(dt);        // dentro da gondola nao tem vento de descida
+    return;
+  }
+  if (c.mode === "world"){
+    /* TERMINAL do fundo do vale: quem chega no salao gigante EMBARCA
+       no elevador principal - subida obrigatoria, sem linha invisivel */
+    if (c.grandLift && st.s > c.grandLift.s1 - 22){
+      Game.tryRide(c.grandLift, true);
+      if (G.ride) return;   // embarcou: o proximo frame ja e ride
+    }
+    /* aviso de embarque perto da estacao de base (Mundo Aberto) */
+    G.rideHintT = (G.rideHintT || 0) - dt;
+    if (G.rideHintT <= 0 && liftBoardable(c, st)){
+      hudMsg("E \u2014 PEGAR O TELEF\u00c9RICO", 1.0);
+      G.rideHintT = 1.6;
+    }
+  }
   var cheerable = false;
   /* aviso antecipado de gargalo (uma vez por gargalo por descida) */
   if (c.chokes && c.chokes.length){
@@ -6469,6 +8208,19 @@ function stepGame(dt){
     if (ev.type === "dnf"){ hudMsg("DESCLASSIFICADO \u2014 FORA DA PISTA", 3); if (Game.tut) G.tutRestart = true; else G.finishT = 1.2; }
     if (ev.type === "finish"){ hudMsg("CHEGADA!", 2.5); if (Game.tut) G.tutRestart = true; else G.finishT = 1.6; }
     if (ev.type === "recovered") Diag.log("guarda anti-NaN reposicionou o esquiador");
+    if (ev.type === "explode"){
+      /* 400 km/h: bola de fogo e descida encerrada na hora (o dnf ja
+         veio da fisica; aqui so o espetaculo e o fechamento) */
+      hudMsg("EXPLODIU EM CHAMAS \u2014 400+ KM/H!", 3);
+      if (Game.tut) G.tutRestart = true; else G.finishT = 1.2;
+      for (var kf = 0; kf < 44; kf++){
+        G.spray.spawn(
+          st.x + (Math.random() * 2 - 1) * 0.9, st.y + 0.25, st.z + (Math.random() * 2 - 1) * 0.9,
+          (Math.random() * 2 - 1) * 9, 2 + Math.random() * 7.5,
+          (Math.random() * 2 - 1) * 9,
+          0.6 + Math.random() * 0.5, 1.2 + Math.random() * 0.7);
+      }
+    }
     if (ev.type === "brush"){
       // escovada em obstaculo macio: lufada lateral de neve
       for (var kb = 0; kb < 6; kb++){
@@ -6521,14 +8273,15 @@ function stepGame(dt){
   }
   Game.tutAim();   /* seta do alvo (esconde sozinha fora do tutorial) */
 
-  /* trilhas na neve */
+  /* trilhas na neve: snowboard deixa um rastro unico e mais largo */
   if (st.grounded && st.speed > 3 && st.crashT <= 0){
     G.trailT += dt;
     while (G.trailT >= 0.05){
       G.trailT -= 0.05;
       var rx = Math.cos(st.yaw), rz = Math.sin(st.yaw);
-      G.trails.spawnPair(c, st.x - rx * 0.26, st.z - rz * 0.26,
-                            st.x + rx * 0.26, st.z + rz * 0.26, st.s);
+      var half = G.gear === "board" ? 0.16 : 0.26;
+      G.trails.spawnPair(c, st.x - rx * half, st.z - rz * half,
+                            st.x + rx * half, st.z + rz * half, st.s);
     }
   }
 
@@ -6548,6 +8301,13 @@ function stepGame(dt){
       -rz2 * side * (1.5 + Math.random() * 2) + st.vz * 0.15,
       0.35 + Math.random() * 0.35, 0.5 + Math.random() * 0.5);
   }
+
+  /* EM CHAMAS: acima de 400 km/h o atrito acende o esquiador. A vinheta
+     de fogo acompanha enquanto durar; abaixo do limite esfria e some. */
+  var fireEl = $("hud-fire");
+  if (fireEl) fireEl.classList.toggle("burn", (st.burnT || 0) > 0);
+  if ((st.burnT || 0) > 0 && !G.burnWarned){ G.burnWarned = true; hudMsg("EM CHAMAS! REDUZA!", 1.4); }
+  if (!(st.burnT || 0)) G.burnWarned = false;
 
   /* animacao procedural do corpo */
   var A = G.anim;
@@ -6659,9 +8419,10 @@ function renderWorld(){
   drawLiftDyn(Game.course);
   drawSigns();
 
-  var showSkier = Game.state === "menu" || !Game.cam || Game.cam.mode !== "fp";
+  var showSkier = (Game.state === "menu" || !Game.cam || Game.cam.mode !== "fp") && !Game.ride;
   if (Game.st && showSkier && Game.skier.torso){
-    var pose = skierPose(Game.st, Game.anim, Game.course);
+    var pose = Game.gear === "board" ? boardPose(Game.st, Game.anim, Game.course)
+                                     : skierPose(Game.st, Game.anim, Game.course);
     for (var name in pose){
       if (Game.skier[name]) drawMesh(Game.skier[name], pose[name]);
     }
@@ -6759,7 +8520,9 @@ function frame(nowMs){
       stepGame(dt);
       hudTick(dt);
       hudUpdate();
+      hudPromptTick(Game.course, Game.st);
     } else if (Game.state === "menu" && Game.menuCourse){
+      audioDuck(dt);      // menu: sem descida = sem vento preso
       /* cenario de fundo do menu: camera orbital lenta */
       var c = Game.menuCourse, sM = 150;
       var cx = trackX(c, sM), cy = heightAt(c, cx, sM);
@@ -6774,7 +8537,9 @@ function frame(nowMs){
       Game.snow.update(dt, Game.menuCam.pos, Math.sin(Game.time * 0.15) * 1.5, 1.0);
       Game.chunks.ensure(sM, 1);
     }
-    /* pausado / resultados: mundo congelado, so renderiza */
+    /* pausado / menu / resultados: mundo congelado, so renderiza - e o
+       som de velocidade zera em vez de ficar preso no ultimo valor */
+    else audioDuck(dt);
 
     if (Diag.on){
       Game.diagT += dt;
@@ -6809,6 +8574,11 @@ function frame(nowMs){
       Game.botSkins[i] = {};
       for (var j = 0; j < ps.length; j++)
         Game.botSkins[i][ps[j].name] = uploadMesh(ps[j].geo);
+      /* bots snowboarders: mesmo corpo, prancha unica no lugar de esquis */
+      var bs = makeSnowboardParts(SKIER_PALS[i]);
+      Game.botBoardSkins[i] = {};
+      for (var j2 = 0; j2 < bs.length; j2++)
+        Game.botBoardSkins[i][bs[j2].name] = uploadMesh(bs[j2].geo);
     }
   }
   function rebuildGL(){
@@ -6816,10 +8586,15 @@ function frame(nowMs){
       GL.progs = {}; GL.bufs = {};
       if (!glInit(GL.canvas)) throw new Error("contexto n\u00e3o recriado");
       glSetQuality(GL.quality);
-      var parts = makeSkierParts(0);
-      Game.skier = {};
-      for (var i = 0; i < parts.length; i++) Game.skier[parts[i].name] = uploadMesh(parts[i].geo);
+      rebuildPlayerMeshes();
       uploadBotSkins();
+      if (Game.gondInterior)
+        for (var gi3 = 0; gi3 < Game.gondInterior.length; gi3++)
+          freeMesh(Game.gondInterior[gi3]);
+      var gparts2 = makeGondolaInteriorParts();
+      Game.gondInterior = [];
+      for (var gj = 0; gj < gparts2.length; gj++)
+        Game.gondInterior.push(uploadMesh(gparts2[gj].geo));
       if (Game.chunks) Game.chunks.map = {};   // buffers antigos pertenciam ao contexto perdido
       if (Game.course){
         Game.bgMesh = uploadMesh(buildBackground(Game.course));
@@ -6850,6 +8625,7 @@ function frame(nowMs){
     glSetQuality(s.quality);
     Game.mode = s.mode; Game.diff = s.diff; Game.trackMode = s.track;
     Game.camMode = s.cam;
+    Game.gear = s.gear; Game.skin = s.skin;
     audioSetVolume(s.volume / 100, s.muted);
 
     segSet("seg-mode", s.mode);
@@ -6857,13 +8633,20 @@ function frame(nowMs){
     segSet("seg-track", s.track);
     segSet("seg-quality", s.quality);
     segSet("seg-cam", s.cam);
+    segSet("seg-gear", s.gear);
+    segSet("seg-skin", String(s.skin));
+    updateCharPreview();
     var vol = document.getElementById("in-vol"); if (vol) vol.value = s.volume;
     var mute = document.getElementById("in-mute"); if (mute) mute.checked = s.muted;
 
-    /* modelo do esquiador + skins dos bots */
-    var parts = makeSkierParts(0);
-    for (var i = 0; i < parts.length; i++) Game.skier[parts[i].name] = uploadMesh(parts[i].geo);
+    /* modelo do jogador (equipamento + skin) + skins dos bots */
+    rebuildPlayerMeshes();
     uploadBotSkins();
+    /* interior da gondola para a visao interna do Mundo Aberto */
+    var gparts = makeGondolaInteriorParts();
+    Game.gondInterior = [];
+    for (var gi = 0; gi < gparts.length; gi++)
+      Game.gondInterior.push(uploadMesh(gparts[gi].geo));
 
     /* sistemas de particulas + buffers dinamicos */
     createFXSystems();
