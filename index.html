@@ -3025,20 +3025,41 @@ function buildChunkMesh(c, ci, qOpts){
   var s0 = ci * CHUNK_LEN, s1 = s0 + CHUNK_LEN;
   var G = new Geo();
 
-  // faixa lateral necessaria
-  var xmin = 1e9, xmax = -1e9;
-  /* MUNDO ABERTO: faixa lateral 150 m (o paredao externo do heightAt
-     fica INTEIRO dentro do mesh; nos outros modes 76 m basta) */
-  var ext = c.mode === "world" ? 150 : 76;
-  for (var s = s0; s <= s1 + 2; s += 8){
-    var tx = trackX(c, s), w = trackW(c, s);
-    if (tx - w - ext < xmin) xmin = tx - w - ext;
-    if (tx + w + ext > xmax) xmax = tx + w + ext;
-  }
-  var xStep = qOpts.xStep || 4, sStep = qOpts.sStep || 2.5;
-  var nx = Math.ceil((xmax - xmin) / xStep) + 1;
+  /* COBERTURA LATERAL PROGRESSIVA: cada LINHA da malha abraca o eixo da
+     pista no seu proprio s (offsets medidos a partir de trackX), com
+     passo DENSO ate alem da borda (pista e obstaculos inteiros na zona
+     fina) e crescimento GEOMETRICO (~1.3x) ate o teto - cobre MUITO mais
+     lateral com MENOS vertices e sem as facetas grosseiras do paredao.
+     Pista, fisica e distribuicao de obstaculos: intocadas. O offset
+     maximo (oLast) e FIXO por curso: costura perfeita entre chunks
+     vizinhos e com o anel interno do cenario de fundo. */
+  var ext = c.mode === "world" ? 520 : 400;   // alem da BORDA da pista
+  var wMax = c.w0 * 1.3;                      // maior meia-largura possivel
+  var dense = wMax + 30;                      // fim da zona de passo fino
+  var oLast = wMax + ext;                     // offset maximo a partir do eixo
+  var sStep = qOpts.sStep || 2.5;
   var nz = Math.ceil(CHUNK_LEN / sStep) + 1;
-  if (nx * nz > 65000) { nx = Math.min(nx, 200); }
+  var xStep0 = qOpts.xStep || 4, offs = null;
+  for (var gt2 = 0; gt2 < 9 && !offs; gt2++){
+    var oA = 0, half = [0];
+    while (oA < dense){ oA = Math.min(oA + xStep0, dense); half.push(oA); }
+    var stO = xStep0;
+    while (oA < oLast){ stO *= 1.3; oA = Math.min(oA + stO, oLast); half.push(oA); }
+    var cand = [];
+    for (var gi2 = half.length - 1; gi2 >= 1; gi2--) cand.push(-half[gi2]);
+    for (gi2 = 0; gi2 < half.length; gi2++) cand.push(half[gi2]);
+    /* teto de vertices por chunk: reduz a RESOLUCAO, nunca a COBERTURA */
+    if (cand.length * nz <= 65000) offs = cand; else xStep0 *= 1.6;
+  }
+  if (!offs) offs = [-oLast, 0, oLast];
+  var nx = offs.length;
+  // limites globais do chunk (apenas para cullear decoracoes)
+  var xmin = 1e9, xmax = -1e9;
+  for (var s = s0; s <= s1 + 2; s += 8){
+    var txb = trackX(c, clamp(s, 0, c.length));
+    if (txb - oLast < xmin) xmin = txb - oLast;
+    if (txb + oLast > xmax) xmax = txb + oLast;
+  }
 
   /* cores dos NIVEIS de rampa (azul / verde / laranja / vermelha):
      a mesma paleta das bandeirinhas de borda - reusada nas faixas
@@ -3067,21 +3088,29 @@ function buildChunkMesh(c, ci, qOpts){
   var grid = [];
   for (var iz = 0; iz < nz; iz++){
     var s = s0 + iz * sStep;
+    /* eixo da linha: trackX/trackW/pisteFactor com s CLAMPADO - a malha
+       abraca o MESMO eixo que heightAt (que clampa s), inclusive nos
+       chunks atras do inicio e alem da chegada */
+    var sC = clamp(s, 0, c.length);
+    var txRow = trackX(c, sC), wRow = trackW(c, sC);
     var row = [];
     for (var ix = 0; ix < nx; ix++){
-      var x = xmin + ix * xStep;
+      var ax = offs[ix], x = txRow + ax;
       var h = heightAt(c, x, s);
       var g2 = gradAt(c, x, s, 0.5);
       var gx = g2[0], gz = -g2[1];
       var nl = Math.sqrt(gx * gx + gz * gz + 1);
       var nxv = -gx / nl, nyv = 1 / nl, nzv = -gz / nl;
-      var pf = pisteFactor(c, x, s);
+      var pf = pisteFactor(c, x, sC);
       var r = groom[0] * pf + snow[0] * (1 - pf),
           gg = groom[1] * pf + snow[1] * (1 - pf),
           b = groom[2] * pf + snow[2] * (1 - pf);
-      // variacao lenta de luminosidade (nuances de neve)
-      var tide = 0.955 + 0.045 * Math.sin(x * 0.021 + s * 0.013) *
-                           Math.sin(x * 0.0089 - s * 0.0071 + 1.7);
+      /* variacao lenta de luminosidade SO no campo proximo: alem da zona
+         densa a quadricula e grosseira e os blobs de luz viravam faixas
+         estranhas no paredao - o campo distante fica liso (neve alta) */
+      var latK = 1 - smoothstep(dense, dense + 140, Math.abs(ax));
+      var tide = 0.955 + 0.045 * latK * Math.sin(x * 0.021 + s * 0.013) *
+                            Math.sin(x * 0.0089 - s * 0.0071 + 1.7);
       r *= tide; gg *= tide; b *= tide;
       if (pf > 0.5){ // corduroy (neve batida com padrao fino)
         var stripe = 0.95 + 0.05 * Math.sin(s * 3.1) * Math.sin(x * 1.25);
@@ -3091,8 +3120,12 @@ function buildChunkMesh(c, ci, qOpts){
         var rk = smoothstep(0.66, 0.46, nyv) * (1 - pf);
         r = lerp(r, rock[0], rk); gg = lerp(gg, rock[1], rk); b = lerp(b, rock[2], rk);
       }
-      if (pf < 0.4 && c.segFactor(s) > 0.9){ // sombra fria sob floresta
-        r = lerp(r, forest[0], 0.35); gg = lerp(gg, forest[1], 0.35); b = lerp(b, forest[2], 0.35);
+      /* sombra fria CONFINADA a faixa onde ha arvores de verdade
+         (obstaculos laterais: w+3.5 ate w+3.5+85): antes o tint seguia
+         ate a borda da malha e virava uma faixa azulada gigante */
+      if (pf < 0.4 && c.segFactor(sC) > 0.9 && ax < wRow + 115){
+        var fk = 0.35 * (1 - smoothstep(wRow + 55, wRow + 110, ax));
+        r = lerp(r, forest[0], fk); gg = lerp(gg, forest[1], fk); b = lerp(b, forest[2], fk);
       }
       if (!qOpts.skipAO){
         for (var ai = 0; ai < aoList.length; ai++){
@@ -3129,11 +3162,12 @@ function buildChunkMesh(c, ci, qOpts){
 
   /* --- delineadores de borda (marcadores coloridos da pista) --- */
   for (var sD = Math.ceil(s0 / 20) * 20; sD < s1; sD += 20){
-    var wD = trackW(c, sD + 10);
+    var sE = clamp(sD + 10, 0, c.length);   // mesmo eixo clampado do terreno
+    var wD = trackW(c, sE);
     var cD = (Math.floor(sD / 20) % 2 === 0) ? [0.95, 0.42, 0.10] : [0.15, 0.45, 0.95];
     for (var sd2 = -1; sd2 <= 1; sd2 += 2){
-      var dxD = trackX(c, sD + 10) + sd2 * (wD - 0.6);
-      var yD = heightAt(c, dxD, sD + 10);
+      var dxD = trackX(c, sE) + sd2 * (wD - 0.6);
+      var yD = heightAt(c, dxD, sE);
       bakeCone(G, dxD, yD, -(sD + 10), 0.035, 0.025, 1.30, 4, cD, cD);
       var fx = dxD - sd2 * 0.45;
       quadN(G, dxD, yD + 0.80, -(sD + 10), dxD, yD + 1.10, -(sD + 10),
@@ -3306,16 +3340,25 @@ function buildChunkMesh(c, ci, qOpts){
 function buildBackground(c){
   var G = new Geo();
   var s0 = -320, s1 = c.length + 520, sStep = 44;
+  /* layer 1 ENCAIXA na borda do chunk: o offset maximo do buildChunkMesh
+     (oLast = w0*1.3 + ext) e FIXO por curso, entao o anel interno da
+     layer 1 usa exatamente esse mesmo offset - costura sem vao em toda a
+     volta, em qualquer preset de qualidade. E ULTRAPASSA a layer 2
+     (anel externo dela em oLast+286 > anel interno da 2 em w+508):
+     nao existe anel de vao entre as camadas do fundo */
+  var oLastB = c.w0 * 1.3 + (c.mode === "world" ? 520 : 400);
   var layers = [
-    { cols: [0, 1, 2, 3.2, 5.2, 8, 13], wall: 0.35, extra: 76, col: [0.83, 0.875, 0.945] },
-    { cols: [14, 20, 28, 40, 56],       wall: 0.55, extra: 200, col: [0.90, 0.935, 0.975] }
+    { cols: [0, 1, 2, 3.2, 5.2, 8, 13], wall: 0.35, base: 0,     offW: false, col: [0.83, 0.875, 0.945] },
+    { cols: [14, 20, 28, 40, 56],       wall: 0.55, base: 200,  offW: true,  col: [0.90, 0.935, 0.975] }
   ];
   function bgH(x, s){
     var dx = x - trackX(c, clamp(s, 0, c.length));
     var h = baseHeight(c, Math.max(s, 0)) + (s < 0 ? s * c.slope0 : (s > c.length ? (s - c.length) * c.slope0 : 0));
     h += c.bowlK * dx * dx;
     h += terrainNoise(c, x, s) * 2.6;
-    h += Math.max(0, (Math.abs(dx) - 140)) * 0.35;
+    /* rampa das montanhas so comeca ALEM da borda do chunk (oLast+20):
+       na costura a faixa continua o vale suave do bowlK, sem degrau */
+    h += Math.max(0, (Math.abs(dx) - (oLastB + 20))) * 0.35;
     return h;
   }
   var ringL = [], ringR = [];
@@ -3326,10 +3369,10 @@ function buildBackground(c){
     for (var s = s0; s <= s1; s += sStep){
       var tx = trackX(c, clamp(s, 0, c.length)), w = trackW(c, clamp(s, 0, c.length));
       for (var k = 0; k < L.cols.length; k++){
-        var xL = tx - (w + L.extra + L.cols[k] * 22);
+        var xL = tx - ((L.offW ? w : oLastB) + L.base + L.cols[k] * 22);
         var hL = bgH(xL, s) + L.cols[k] * L.wall * 1.6;
         ringL[idx].push(G.vert(xL, hL, -s, 0, 1, 0, L.col[0], L.col[1], L.col[2]));
-        var xR = tx + (w + L.extra + L.cols[k] * 22);
+        var xR = tx + ((L.offW ? w : oLastB) + L.base + L.cols[k] * 22);
         var hR = bgH(xR, s) + L.cols[k] * L.wall * 1.6;
         ringR[idx].push(G.vert(xR, hR, -s, 0, 1, 0, L.col[0], L.col[1], L.col[2]));
       }
@@ -4543,6 +4586,149 @@ function runSelfTests(){
     for (var i = 0; i < need.length; i++)
       if (!names[need[i]]) return { ok: false, msg: "pe\u00e7a ausente: " + need[i] };
     return ok(bg.nv > 100, "fundo " + bg.nv + " v\u00e9rtices, 11 pe\u00e7as ok");
+  });
+  test("geo: cobertura lateral progressiva fecha o vale (sem vao)", function(){
+    var modos = ["free", "world"];
+    var exts = { free: 400, world: 520 };
+    for (var mi = 0; mi < modos.length; mi++){
+      var cM = makeCourse(modos[mi], "med", 404);
+      var ci = 6, s0 = ci * CHUNK_LEN;
+      var m = buildChunkMesh(cM, ci, { xStep: 6, sStep: 5, skipAO: true });
+      var oL = cM.w0 * 1.3 + exts[modos[mi]];
+      if (!(m.nv > 0)) return { ok: false, msg: modos[mi] + ": mesh vazio" };
+      /* cada LINHA da malha (nao um retangulo global) alcanca
+         trackX(s) +/- oLast: a cobertura segue o meandro da pista */
+      for (var sR = s0; sR <= s0 + CHUNK_LEN + 0.1; sR += 5){
+        var zR = -sR, rmin = 1e9, rmax = -1e9, n = 0;
+        for (var i = 0; i < m.v.length; i += 11){
+          if (Math.abs(m.v[i + 2] - zR) > 0.01) continue;
+          n++;
+          if (m.v[i] < rmin) rmin = m.v[i];
+          if (m.v[i] > rmax) rmax = m.v[i];
+        }
+        var tx = trackX(cM, sR);
+        if (!(n > 0) || rmin > tx - oL + 2 || rmin < tx - oL - 55 ||
+            rmax < tx + oL - 2 || rmax > tx + oL + 55)
+          return { ok: false, msg: modos[mi] + ": linha s=" + sR.toFixed(0) +
+                  " cobre " + rmin.toFixed(0) + ".." + rmax.toFixed(0) +
+                  " em vez de " + (tx - oL).toFixed(0) + ".." + (tx + oL).toFixed(0) };
+      }
+    }
+    /* fundo: layer 1 ENCAIXA na borda do chunk (o MESMO oLast fixo por
+       curso) e ultrapassa a layer 2 - sem anel de vao entre camadas */
+    var c = makeCourse("free", "med", 404);
+    var sR = -320; while (sR < 200) sR += 44;
+    var oLB = c.w0 * 1.3 + 400;
+    var txR = trackX(c, sR), wR = trackW(c, sR);
+    var eBorda = txR - oLB;
+    var eL1out = txR - (oLB + 13 * 22);
+    var eL2in  = txR - (wR + 200 + 14 * 22);
+    var achouB = false, achou1 = false, achou2 = false;
+    var bg = buildBackground(c);
+    for (var i = 0; i < bg.v.length; i += 11){
+      var d1 = eBorda - bg.v[i]; if (d1 > -0.6 && d1 < 0.6) achouB = true;
+      var d2 = eL1out - bg.v[i]; if (d2 > -0.6 && d2 < 0.6) achou1 = true;
+      var d3 = eL2in - bg.v[i];  if (d3 > -0.6 && d3 < 0.6) achou2 = true;
+    }
+    return ok(achouB && achou1 && achou2 && eL1out < eL2in - 20,
+      "linhas cobrem oLast nos 2 modos; fundo encosta na borda e cruza a layer 2");
+  });
+  test("geo: sombras confinadas e campo distante liso", function(){
+    /* Replica a formula de cor da malha em 2 vertices de um BOSQUE:
+       perto da pista (sombra fria presente, com o fade da faixa onde ha
+       arvores) e no campo distante (tide atenuado = neve lisa, SEM sombra
+       azul de floresta). Se o tint vazar para alem da faixa ou os blobs
+       de luminosidade voltarem ao paredao, a cor real diverge da
+       formula e o teste pega. */
+    var c = makeCourse("free", "med", 404);
+    var iF = -1;
+    for (var i = 0; i < c.segs.length; i++){
+      if (c.segs[i].type === "forest"){ iF = i; break; }
+    }
+    if (iF < 0) return { ok: false, msg: "curso sem seg forest" };
+    var denseE = c.w0 * 1.3 + 30, oLastE = c.w0 * 1.3 + 400;
+    // replica os offsets laterais do buildChunkMesh (xStep 3)
+    var oA = 0, halfO = [0], stO = 3;
+    while (oA < denseE){ oA = Math.min(oA + 3, denseE); halfO.push(oA); }
+    while (oA < oLastE){ stO *= 1.3; oA = Math.min(oA + stO, oLastE); halfO.push(oA); }
+    var sMid = (c.segs[iF].s0 + c.segs[iF].s1) * 0.5;
+    var base = Math.round(sMid / 2.5) * 2.5;   // fase da grade da malha
+    var sR = -1;
+    for (var cand = 0; cand <= 60; cand++){   // linha do miolo, sem rampa cruzando
+      var sT = base + (cand % 2 ? -1 : 1) * Math.ceil(cand / 2) * 2.5;
+      if (sT < c.segs[iF].s0 + 10 || sT > c.segs[iF].s1 - 10) continue;
+      var confl = false;
+      for (var j = 0; j < c.ramps.length; j++){
+        var Rr = c.ramps[j];
+        if (sT > Rr.s - Rr.len - 2 && sT < Rr.s + 4) confl = true;
+      }
+      if (!confl){ sR = sT; break; }
+    }
+    if (sR < 0) return { ok: false, msg: "sem linha de bosque livre de rampas" };
+    var ci = Math.floor(sR / CHUNK_LEN);
+    var mF = buildChunkMesh(c, ci, { xStep: 3, sStep: 2.5, skipAO: true });
+    function vertProx(sRow, axT){
+      var sC0 = clamp(sRow, 0, c.length);
+      var tx = trackX(c, sC0), best = null, bd = 1e9;
+      for (var vi = 0; vi < mF.nv; vi++){
+        if (Math.abs(mF.v[vi * 11 + 2] + sRow) > 1e-6) continue;
+        var d = Math.abs(mF.v[vi * 11] - (tx + axT));
+        if (d < bd){ bd = d; best = vi; }
+      }
+      return (best === null || bd > 0.05) ? null : best;
+    }
+    var sC = clamp(sR, 0, c.length), wRow = trackW(c, sC);
+    var axN = 0;
+    for (var i = 0; i < halfO.length; i++)
+      if (Math.abs(halfO[i] - (wRow + 20)) < Math.abs(halfO[axN] - (wRow + 20))) axN = i;
+    var axFar = 0;
+    for (var i = 0; i < halfO.length; i++)
+      if (halfO[i] >= denseE + 150){ axFar = i; break; }
+    var vNF = vertProx(sR, halfO[axN]), vFF = vertProx(sR, halfO[axFar]);
+    if (vNF === null || vFF === null)
+      return { ok: false, msg: "vertices da malha nao achados" };
+    var GROOM = [0.955, 0.972, 0.995], SNOW = [0.885, 0.915, 0.965],
+        ROCK = [0.42, 0.41, 0.45], FOREST = [0.80, 0.855, 0.92];
+    function corEsperada(vi){
+      var x = mF.v[vi * 11], ax = x - trackX(c, sC);
+      var pf = pisteFactor(c, x, sC);
+      var g2 = gradAt(c, x, sR, 0.5);
+      var gx = g2[0], gz = -g2[1], nl = Math.sqrt(gx * gx + gz * gz + 1), nyv = 1 / nl;
+      var r = GROOM[0] * pf + SNOW[0] * (1 - pf),
+          gg = GROOM[1] * pf + SNOW[1] * (1 - pf),
+          b = GROOM[2] * pf + SNOW[2] * (1 - pf);
+      var latK = 1 - smoothstep(denseE, denseE + 140, Math.abs(ax));
+      var tide = 0.955 + 0.045 * latK * Math.sin(x * 0.021 + sR * 0.013) *
+                            Math.sin(x * 0.0089 - sR * 0.0071 + 1.7);
+      r *= tide; gg *= tide; b *= tide;
+      if (pf > 0.5){
+        var stripe = 0.95 + 0.05 * Math.sin(sR * 3.1) * Math.sin(x * 1.25);
+        r *= stripe; gg *= stripe; b *= stripe;
+      }
+      if (nyv < 0.66){
+        var rk = smoothstep(0.66, 0.46, nyv) * (1 - pf);
+        r = lerp(r, ROCK[0], rk); gg = lerp(gg, ROCK[1], rk); b = lerp(b, ROCK[2], rk);
+      }
+      var fk = 0;
+      if (pf < 0.4 && c.segFactor(sC) > 0.9 && ax < wRow + 115)
+        fk = 0.35 * (1 - smoothstep(wRow + 55, wRow + 110, ax));
+      r = lerp(r, FOREST[0], fk); gg = lerp(gg, FOREST[1], fk); b = lerp(b, FOREST[2], fk);
+      return [r, gg, b, fk, latK];
+    }
+    var eN = corEsperada(vNF), eF = corEsperada(vFF);
+    var dN = Math.max(Math.abs(mF.v[vNF * 11 + 6] - eN[0]),
+                      Math.abs(mF.v[vNF * 11 + 7] - eN[1]),
+                      Math.abs(mF.v[vNF * 11 + 8] - eN[2]));
+    var dF = Math.max(Math.abs(mF.v[vFF * 11 + 6] - eF[0]),
+                      Math.abs(mF.v[vFF * 11 + 7] - eF[1]),
+                      Math.abs(mF.v[vFF * 11 + 8] - eF[2]));
+    if (dN > 0.004 || dF > 0.004)
+      return { ok: false, msg: "cor diverge da formula (prox=" + dN.toFixed(4) +
+              ", distante=" + dF.toFixed(4) + ")" };
+    if (!(eN[3] > 0.05) || !(eF[3] === 0) || !(eF[4] === 0))
+      return { ok: false, msg: "fade fora do lugar (fkN=" + eN[3].toFixed(3) +
+              ", fkF=" + eF[3].toFixed(3) + ", latKF=" + eF[4].toFixed(3) + ")" };
+    return ok(true, "sombra confinada ao bosque; campo distante liso (sem tide)");
   });
   test("geo: pose articulada produz matrizes finitas", function(){
     var c = makeCourse("free", "med", 6);
@@ -6030,9 +6216,14 @@ ChunkManager.prototype.ensure = function(sCam, budget){
     if (this.map[ci]) continue;
     if (built >= (budget === undefined ? 1 : budget)) return;
     var s0 = ci * CHUNK_LEN;
-    if (s0 < -CHUNK_LEN || s0 > this.c.length + CHUNK_LEN) continue;
+    /* COBERTURA ALEM DO INICIO E DA CHEGADA: chunk negativo REAL (o
+       Math.max(0, ci) desenhava uma COPIA do chunk 0 atras do inicio e
+       deixava s<0 sem malha nenhuma) + run-out de 6 chunks (480 m) apos
+       a chegada em TODOS os modos - o vale fecha de malha bem alem da
+       linha final, encostando no cenario de fundo (rings em length+520) */
+    if (s0 < -CHUNK_LEN || s0 > this.c.length + 6 * CHUNK_LEN) continue;
     var P = glPreset();
-    var mesh = buildChunkMesh(this.c, Math.max(0, ci), { xStep: P.chunkX, sStep: P.chunkS, skipAO: P.skipAO });
+    var mesh = buildChunkMesh(this.c, ci, { xStep: P.chunkX, sStep: P.chunkS, skipAO: P.skipAO });
     if (mesh.nv > 0) this.map[ci] = uploadMesh(mesh);
     built++;
   }
