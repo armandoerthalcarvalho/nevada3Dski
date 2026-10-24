@@ -3,7 +3,7 @@
 <head>
 <!-- NEVADA v8: UI frost-glass (HUD/menu/resultados), tutorial adiantado, BONUS ok -->
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
 <title>NEVADA &#8212; Ski 3D</title>
 <style>
 /* ============================================================
@@ -27,7 +27,7 @@
   --fnt:"Segoe UI Variable Text","Segoe UI",system-ui,-apple-system,Roboto,"Helvetica Neue",sans-serif;
 }
 *{margin:0;padding:0;box-sizing:border-box}
-html,body{width:100%;height:100%;overflow:hidden;background:var(--bg0)}
+html,body{width:100%;height:100%;overflow:hidden;background:var(--bg0);overscroll-behavior:none}
 body{font-family:var(--fnt);color:var(--txt);-webkit-user-select:none;user-select:none;touch-action:none}
 button{-webkit-tap-highlight-color:transparent;font-family:inherit}
 :focus-visible{outline:2px solid var(--accent);outline-offset:2px;border-radius:4px}
@@ -43,7 +43,7 @@ button{-webkit-tap-highlight-color:transparent;font-family:inherit}
 .panel{position:relative;background:linear-gradient(180deg,rgba(13,24,42,.86),rgba(8,15,27,.82));
   backdrop-filter:blur(16px) saturate(1.35);-webkit-backdrop-filter:blur(16px) saturate(1.35);
   border:1px solid var(--line);border-radius:var(--r-lg);padding:28px 32px;
-  max-width:min(92vw,560px);width:100%;max-height:88vh;overflow:auto;
+  max-width:min(94vw,880px);width:100%;max-height:88vh;overflow:auto;
   box-shadow:0 30px 80px rgba(0,0,0,.62),inset 0 1px 0 rgba(255,255,255,.07),0 0 0 1px rgba(92,200,255,.04)}
 .panel::before{content:"";position:absolute;top:0;left:30px;right:30px;height:2px;border-radius:2px;
   background:linear-gradient(90deg,transparent,var(--accent) 30%,var(--accent2) 70%,transparent)}
@@ -85,6 +85,13 @@ h2{font-size:21px;letter-spacing:.08em;margin-bottom:14px;color:var(--accent);fo
   box-shadow:0 10px 28px rgba(255,110,70,.20)}
 .btn[disabled]{opacity:.38;cursor:not-allowed}
 .row{display:flex;gap:10px;flex-wrap:wrap}.row .btn{flex:1 1 40%}
+/* ===== menu em 2 colunas (cabe sem rolagem) ===== */
+.menu-grid{display:grid;grid-template-columns:1fr 1fr;gap:6px 26px;margin-top:4px;text-align:left}
+.mcol .lbl:first-child{margin-top:10px}
+.mrow{display:flex;gap:14px;align-items:flex-start}
+.mstack{flex:1;min-width:0}
+.seg-wrap{flex-wrap:wrap}
+.seg-wrap button{flex:1 1 calc(50% - 6px)}
 /* ===== seletores segmentados (chips) ===== */
 .seg{display:flex;gap:6px;border:1px solid var(--line);border-radius:var(--r-md);overflow:hidden;margin-top:8px;
   background:rgba(6,12,22,.45);padding:5px}
@@ -195,16 +202,37 @@ kbd{background:rgba(92,200,255,.12);border:1px solid var(--line2);border-bottom-
 body.touchmode #touch{display:block}
 .tbtn{position:absolute;pointer-events:auto;background:rgba(12,24,40,.55);border:1px solid rgba(130,195,255,.35);
   color:#dceeff;border-radius:50%;display:flex;align-items:center;justify-content:center;font-weight:800;
-  font-size:13px;letter-spacing:.06em;backdrop-filter:blur(4px);-webkit-backdrop-filter:blur(4px);
-  box-shadow:0 6px 20px rgba(0,0,0,.35),inset 0 1px 0 rgba(255,255,255,.10);transition:background .12s}
-.tbtn:active,.tbtn.on{background:rgba(92,200,255,.45);box-shadow:0 0 24px rgba(92,200,255,.4)}
-#t-left{left:16px;bottom:96px;width:76px;height:76px;font-size:27px}
-#t-right{left:108px;bottom:96px;width:76px;height:76px;font-size:27px}
-#t-brake{right:16px;bottom:162px;width:72px;height:60px;border-radius:18px}
-#t-tuck{right:104px;bottom:162px;width:64px;height:60px;border-radius:18px}
-#t-skid{right:16px;bottom:84px;width:72px;height:60px;border-radius:18px}
-#t-jump{right:104px;bottom:84px;width:64px;height:60px;border-radius:18px}
+  font-size:12.5px;letter-spacing:.05em;line-height:1.1;text-align:center;
+  backdrop-filter:blur(4px);-webkit-backdrop-filter:blur(4px);touch-action:none;
+  box-shadow:0 6px 20px rgba(0,0,0,.35),inset 0 1px 0 rgba(255,255,255,.10);
+  transition:background .12s,transform .12s,box-shadow .12s}
+.tbtn:active,.tbtn.on{background:rgba(92,200,255,.45);box-shadow:0 0 24px rgba(92,200,255,.4);transform:scale(1.07)}
+/* virar: alvos grandes no polegar esquerdo ( rente a borda inferior) */
+#t-left{left:14px;bottom:84px;width:84px;height:84px;font-size:30px}
+#t-right{left:106px;bottom:84px;width:84px;height:84px;font-size:30px}
+/* acoes: PULO e o botao principal (canto inferior direito, maior);
+   AGACHAR ao lado (seguido muito); FREIO e DERRAPAR em cima */
+#t-jump{right:14px;bottom:84px;width:90px;height:66px;border-radius:20px;font-size:15px}
+#t-tuck{right:114px;bottom:84px;width:74px;height:66px;border-radius:20px;font-size:12px}
+#t-brake{right:14px;bottom:146px;width:90px;height:58px;border-radius:18px}
+#t-skid{right:114px;bottom:146px;width:74px;height:58px;border-radius:18px;font-size:11.5px}
+/* utilitarios: pausa/camera/hUD no topo direito */
 #t-pause{right:14px;top:64px;width:46px;height:40px;font-size:16px;border-radius:12px}
+#t-cam{right:68px;top:64px;width:46px;height:40px;font-size:12px;border-radius:12px}
+#t-hud{right:122px;top:64px;width:46px;height:40px;font-size:12px;border-radius:12px}
+/* corridas com HUD visivel: os utilitarios DESCEM para nao cobrir o HUD
+   (tempo/pontos); com o HUD oculto pelo botao HUD (ou no Mundo Aberto,
+   que nao tem o botao), voltam ao topo normal */
+#touch.hudshift #t-pause{top:128px}
+#touch.hudshift #t-cam{top:128px}
+#touch.hudshift #t-hud{top:128px}
+/* embarque/turbo do teleferico: destaque, acima das acoes */
+#t-lift{right:14px;top:112px;width:90px;height:44px;border-radius:14px;font-size:14px;
+  background:rgba(20,80,60,.60);border-color:rgba(105,240,174,.55)}
+/* chip de botao de toque nos textos (substitui as teclas <kbd>) */
+.tchip{display:inline-block;padding:1px 8px;border-radius:7px;font-weight:800;font-size:.92em;
+  background:linear-gradient(180deg,var(--accent),var(--accent2));color:#fff;white-space:nowrap;
+  box-shadow:0 2px 8px rgba(0,0,0,.35)}
 /* ===== boot / erro ===== */
 #boot .panel,#errbox .panel{text-align:center}
 .spin{width:40px;height:40px;margin:16px auto;border-radius:50%;border:3px solid rgba(130,195,255,.18);
@@ -215,16 +243,35 @@ body.touchmode #touch{display:block}
 .note{font-size:12.5px;color:var(--dim);margin-top:14px;line-height:1.6}
 .menufoot{margin-top:18px;font-size:12px;color:var(--dim2);letter-spacing:.04em;text-align:center;line-height:2.3}
 @media (max-width:700px){
-  .panel{padding:18px 16px}
+  .panel{padding:16px 14px}
+  h1{font-size:34px}
+  .tagline{margin:8px 0 14px;font-size:10px}
+  .menu-grid{gap:2px 16px;margin-top:2px}
+  .mrow{gap:10px}
+  #char-preview{width:116px;padding:7px 7px 6px}
+  .seg{padding:4px;gap:5px;margin-top:6px}
+  .seg button{padding:10px 4px;font-size:13px}
+  .lbl{margin-top:12px}
+  .row .btn{padding:11px 8px;font-size:14px}
+  .btn{padding:12px 10px;font-size:15px}
+  table.keys{font-size:12.5px}
+  .note{font-size:11.5px;line-height:1.55}
+  .statgrid{font-size:13px}
+  #results .grade{font-size:54px}
   #hud-speed .v{font-size:28px}
   #hud-score .v{font-size:20px}
-  #hud-sub{bottom:190px}
+  #hud-sub{bottom:216px;font-size:12.5px}
   #hud-time{top:64px}
+  #hud-msg{bottom:262px;font-size:14px;white-space:normal;text-align:center;max-width:78vw}
+  #hud-prompt{bottom:34%;font-size:16px;padding:10px 18px;gap:10px}
+  #hud-prompt .kbadge{min-width:30px;font-size:20px;padding:5px 10px}
+  .toast{font-size:17px}
+  .menufoot{margin-top:12px;font-size:11px;line-height:1.8}
 }
-/* ===== previa do personagem ===== */
-#char-preview{position:fixed;right:18px;top:50%;transform:translateY(-50%);width:200px;
+/* ===== previa do personagem (dentro do painel, ao lado do equipamento) ===== */
+#char-preview{position:relative;flex:none;width:150px;align-self:center;
   background:linear-gradient(180deg,rgba(16,32,54,.92),rgba(9,20,36,.90));
-  border:1px solid rgba(92,200,255,.40);border-radius:16px;padding:12px 12px 10px;text-align:center;
+  border:1px solid rgba(92,200,255,.40);border-radius:16px;padding:10px 10px 8px;text-align:center;
   pointer-events:none;box-shadow:0 10px 36px rgba(0,0,0,.45);
   backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px)}
 #char-preview::after{content:"";position:absolute;left:0;right:0;top:0;height:2px;
@@ -233,8 +280,26 @@ body.touchmode #touch{display:block}
   text-transform:uppercase;color:#8fdcff;margin-bottom:6px}
 #char-preview .cp-name{font-size:15px;font-weight:800;color:var(--txt);margin-top:2px}
 #char-preview .cp-sub{font-size:11px;color:rgba(238,246,255,.5);margin-top:3px}
-#char-preview canvas{display:block;margin:0 auto;pointer-events:auto;cursor:grab;touch-action:none}
-@media (max-width:940px){#char-preview{display:none}}
+#char-preview canvas{display:block;margin:0 auto;pointer-events:auto;cursor:grab;touch-action:none;
+  width:100%;height:auto}
+@media (max-width:900px){.menu-grid{grid-template-columns:1fr}}
+@media (max-width:640px){#char-preview{width:132px}}
+/* telas baixas: a previsao fica COMPACTA (nunca some) e o menu aperta o
+   espacamento para continuar cabendo sem rolagem */
+@media (max-height:760px){
+  .panel{padding:16px 26px}
+  h1{font-size:clamp(30px,7vw,42px)}
+  .tagline{margin:6px 0 12px}
+  .menu-grid{gap:2px 22px;margin-top:2px}
+  .mcol .lbl:first-child{margin-top:6px}
+  .lbl{margin-top:12px}
+  .seg{margin-top:6px;padding:4px}
+  #char-preview{width:118px;padding:7px 7px 6px}
+  #char-preview .cp-head{font-size:10px;margin-bottom:4px}
+  #char-preview .cp-name{font-size:13px;margin-top:1px}
+  #char-preview .cp-sub{font-size:10px;margin-top:2px}
+  .menufoot{margin-top:10px;line-height:1.8}
+}
 /* ===== tutorial ===== */
 #tut{position:absolute;left:0;right:0;top:14px;display:flex;justify-content:center;pointer-events:none;z-index:40;padding:0 12px}
 #tut .tutbox{pointer-events:auto;position:relative;
@@ -314,7 +379,7 @@ body.touchmode #touch{display:block}
   </div>
 </div>
 
-<div id="touch">
+<div id="touch" class="hidden">
   <div class="tbtn" id="t-left">&#9664;</div>
   <div class="tbtn" id="t-right">&#9654;</div>
   <div class="tbtn" id="t-tuck">AGACHAR</div>
@@ -323,6 +388,8 @@ body.touchmode #touch{display:block}
   <div class="tbtn" id="t-jump">PULO</div>
   <div class="tbtn" id="t-lift" style="display:none">LIFT</div>
   <div class="tbtn" id="t-pause">II</div>
+  <div class="tbtn" id="t-cam">CAM</div>
+  <div class="tbtn" id="t-hud">HUD</div>
 </div>
 
 <div id="boot" class="screen"><div class="panel" style="max-width:340px">
@@ -342,38 +409,49 @@ body.touchmode #touch{display:block}
     <h1>NEVADA</h1>
     <div class="tagline">Ski 3D &#8226; Montanhas Procedurais</div>
   </div>
-  <div class="lbl">Modo de jogo</div>
-  <div class="seg" id="seg-mode">
-    <button data-v="slalom">Slalom</button>
-    <button data-v="free">Corrida Livre</button>
-    <button data-v="endurance">Estilo</button>
-    <button data-v="world">Mundo Aberto</button>
-  </div>
-  <div class="lbl">Dificuldade</div>
-  <div class="seg" id="seg-diff">
-    <button data-v="easy">F&#225;cil</button>
-    <button data-v="med">M&#233;dio</button>
-    <button data-v="hard">Dif&#237;cil</button>
-    <button data-v="extremo">Extremo</button>
-  </div>
-  <div class="lbl">Pista</div>
-  <div class="seg" id="seg-track">
-    <button data-v="fixed">Fixa (recordes justos)</button>
-    <button data-v="rand">Aleat&#243;ria</button>
-  </div>
-  <div class="lbl">Equipamento</div>
-  <div class="seg" id="seg-gear">
-    <button data-v="ski">&#9553; Esqui</button>
-    <button data-v="board">&#9552; Snowboard</button>
-  </div>
-  <div class="lbl">Apar&#234;ncia</div>
-  <div class="seg" id="seg-skin">
-    <button data-v="0">Cl&#225;ssico</button>
-    <button data-v="1">Aurora</button>
-    <button data-v="2">Glacial</button>
-    <button data-v="3">Vulc&#227;o</button>
-    <button data-v="4">Meia-noite</button>
-    <button data-v="5">Alpine</button>
+  <div class="menu-grid">
+    <div class="mcol">
+      <div class="lbl">Modo de jogo</div>
+      <div class="seg" id="seg-mode">
+        <button data-v="slalom">Slalom</button>
+        <button data-v="free">Corrida Livre</button>
+        <button data-v="endurance">Estilo</button>
+        <button data-v="world">Mundo Aberto</button>
+      </div>
+      <div class="lbl">Dificuldade</div>
+      <div class="seg" id="seg-diff">
+        <button data-v="easy">F&#225;cil</button>
+        <button data-v="med">M&#233;dio</button>
+        <button data-v="hard">Dif&#237;cil</button>
+        <button data-v="extremo">Extremo</button>
+      </div>
+      <div class="lbl">Pista</div>
+      <div class="seg" id="seg-track">
+        <button data-v="fixed">Fixa (recordes justos)</button>
+        <button data-v="rand">Aleat&#243;ria</button>
+      </div>
+    </div>
+    <div class="mcol">
+      <div class="mrow">
+        <div id="char-preview" aria-hidden="true"></div>
+        <div class="mstack">
+          <div class="lbl">Equipamento</div>
+          <div class="seg" id="seg-gear">
+            <button data-v="ski">&#9553; Esqui</button>
+            <button data-v="board">&#9552; Snowboard</button>
+          </div>
+          <div class="lbl">Apar&#234;ncia</div>
+          <div class="seg seg-wrap" id="seg-skin">
+            <button data-v="0">Cl&#225;ssico</button>
+            <button data-v="1">Aurora</button>
+            <button data-v="2">Glacial</button>
+            <button data-v="3">Vulc&#227;o</button>
+            <button data-v="4">Meia-noite</button>
+            <button data-v="5">Alpine</button>
+          </div>
+        </div>
+      </div>
+    </div>
   </div>
   <button class="btn primary" id="btn-start">&#9650; INICIAR DESCIDA</button>
   <div class="row">
@@ -384,7 +462,6 @@ body.touchmode #touch{display:block}
   </div>
   <div class="menufoot"><kbd>A/D</kbd> virar &#8226; <kbd>W</kbd> agachar &#8226; <kbd>S</kbd> frear &#8226; <kbd>Shift</kbd> derrapar &#8226; <kbd>Espa&#231;o</kbd> saltar/manobrar &#8226; <kbd>C</kbd> c&#226;mera &#8226; <kbd>Esc</kbd> pausa</div>
 </div>
-<div id="char-preview" aria-hidden="true"></div>
 </div>
 
 <div id="m-settings" class="screen hidden"><div class="panel">
@@ -435,7 +512,7 @@ body.touchmode #touch{display:block}
     <tr><td><kbd>E</kbd></td><td>Embarcar no telef&#233;rico (Mundo Aberto) &#8212; no fundo do vale o <b>terminal gigante</b> embarca voc&#234; automaticamente</td></tr>
     <tr><td><kbd>F</kbd></td><td>Turbo: acelerar a subida do telef&#233;rico</td></tr>
     <tr><td><kbd>Esc</kbd></td><td>Pausar / retomar</td></tr>
-    <tr><td><kbd>F3</kbd> ou <kbd>`</kbd></td><td>Painel de diagn&#243;stico e testes</td></tr>
+    <tr id="hrow-diag"><td><kbd>F3</kbd> ou <kbd>`</kbd></td><td>Painel de diagn&#243;stico e testes</td></tr>
   </table>
 
   <div class="hsec">Cat&#225;logo de truques</div>
@@ -2459,7 +2536,7 @@ function sanitizeSave(o){
   }
   s.settings.quality = pick(st.quality, ["vlow", "low", "med", "high", "vhigh"], "med");
   s.settings.cam = pick(st.cam, ["chase", "fp"], "chase");
-  s.settings.mode = pick(st.mode, ["slalom", "free", "endurance"], "slalom");
+  s.settings.mode = pick(st.mode, ["slalom", "free", "endurance", "world"], "slalom");
   s.settings.diff = pick(st.diff, ["easy", "med", "hard", "extremo"], "med");
   s.settings.track = pick(st.track, ["fixed", "rand"], "fixed");
   s.settings.gear = pick(st.gear, ["ski", "board"], "ski");
@@ -2467,10 +2544,11 @@ function sanitizeSave(o){
   s.settings.skin = isFinite(skn) ? clamp(Math.round(skn), 0, PLAYER_SKINS.length - 1) : 0;
   var vol = Number(st.volume); s.settings.volume = isFinite(vol) ? clamp(Math.round(vol), 0, 100) : 70;
   s.settings.muted = !!st.muted;
+  s.settings.qset = !!st.qset;   // qualidade escolhida a mao: o padrao de toque nao se aplica
   s.tutDone = !!o.tutDone;
   if (o.records && typeof o.records === "object"){
     for (var k in o.records){
-      if (!/^(slalom|free|endurance)\.(easy|med|hard|extremo)\.(fixed|rand)$/.test(k)) continue;
+      if (!/^(slalom|free|endurance|world)\.(easy|med|hard|extremo)\.(fixed|rand)$/.test(k)) continue;
       var r = o.records[k];
       if (!r || typeof r !== "object") continue;
       var rec = {};
@@ -2482,6 +2560,14 @@ function sanitizeSave(o){
     }
   }
   return s;
+}
+/* qualidade padrao no toque: sem escolha manual registrada, comeca em
+   "low" (celular medio roda liso desde o primeiro frame); desktop usa
+   a do save */
+function defaultQuality(save, touch){
+  var q = (save && save.settings) ? save.settings.quality : "med";
+  if (touch && !(save && save.settings && save.settings.qset)) return "low";
+  return q;
 }
 function loadSave(storage){
   try {
@@ -3116,8 +3202,18 @@ function buildChunkMesh(c, ci, qOpts){
         var stripe = 0.95 + 0.05 * Math.sin(s * 3.1) * Math.sin(x * 1.25);
         r *= stripe; gg *= stripe; b *= stripe;
       }
-      if (nyv < 0.66){ // encostas muito ingremes: rocha azulada
-        var rk = smoothstep(0.66, 0.46, nyv) * (1 - pf);
+      /* tint de rocha ANALITICO: o gradAt carrega o ruido do terreno
+         (gradiente +-0.5) e, na zona de transicao do paredao, o nyv
+         piscava em manchas a cada amostra. A COR segue so a FORMA do
+         vale (bowl + paredao do world + declive base) - estavel e lisa;
+         as NORMAIS de iluminacao continuam vindas do gradAt completo */
+      var gxA = 2 * c.bowlK * ax;
+      if (c.mode === "world" && Math.abs(ax) > wRow + 100)
+        gxA += 0.028 * (Math.abs(ax) - (wRow + 100));
+      var gzA = -(c.slope0 + c.slopeAmp * Math.sin(c.slopeK * sC + c.slopePh));
+      var nyvA = 1 / Math.sqrt(1 + gxA * gxA + gzA * gzA);
+      if (nyvA < 0.66){ // encostas muito ingremes: rocha azulada
+        var rk = smoothstep(0.66, 0.46, nyvA) * (1 - pf);
         r = lerp(r, rock[0], rk); gg = lerp(gg, rock[1], rk); b = lerp(b, rock[2], rk);
       }
       /* sombra fria CONFINADA a faixa onde ha arvores de verdade
@@ -4277,6 +4373,34 @@ function runSelfTests(){
               s.settings.mode === "slalom" && !s.records["hack.key"] &&
               !s.records["slalom.med"], "sanitizado: " + JSON.stringify(s.settings));
   });
+  test("save: modo Mundo Aberto persiste", function(){
+    var st = mockStorage();
+    var s = defaultSave();
+    s.settings.mode = "world";
+    persistSave(s, st);
+    var s2 = loadSave(st);
+    var s3 = sanitizeSave({ settings: { mode: "world" } });
+    var s4 = sanitizeSave({ settings: { mode: "kart" } });
+    var s5 = sanitizeSave({ records: { "world.med.fixed": { time: 61 } } });
+    return ok(s2.settings.mode === "world" && s3.settings.mode === "world" &&
+               s4.settings.mode === "slalom" &&
+               s5.records["world.med.fixed"] && s5.records["world.med.fixed"].time === 61,
+      "round-trip=" + s2.settings.mode + " sanitize=" + s3.settings.mode +
+      " invalido->" + s4.settings.mode +
+      " recWorld=" + (s5.records["world.med.fixed"] ? "ok" : "perdido"));
+  });
+  test("save: qualidade padrao low no toque, escolha manual persiste", function(){
+    var sv = defaultSave();
+    var s1 = sanitizeSave({ settings: { quality: "low", qset: true } });
+    return ok(defaultQuality(sv, true) === "low" &&
+              defaultQuality(sv, false) === "med" &&
+              s1.settings.qset === true && s1.settings.quality === "low" &&
+              defaultQuality({ settings: { quality: "high", qset: true } }, true) === "high" &&
+              defaultQuality({ settings: { quality: "high" } }, true) === "low" &&
+              defaultQuality({ settings: { quality: "high" } }, false) === "high",
+      "toque sem escolha=low; escolha/desktop intactos; qset=" +
+      (s1.settings.qset ? "ok" : "perdido"));
+  });
   test("save: recorde de tempo melhora s\u00f3 com tempo menor", function(){
     var s = defaultSave();
     var r1 = updateRecords(s, "slalom", "med", { time: 80, score: 100, dist: 1500, finished: true }, "fixed");
@@ -4692,8 +4816,13 @@ function runSelfTests(){
     function corEsperada(vi){
       var x = mF.v[vi * 11], ax = x - trackX(c, sC);
       var pf = pisteFactor(c, x, sC);
-      var g2 = gradAt(c, x, sR, 0.5);
-      var gx = g2[0], gz = -g2[1], nl = Math.sqrt(gx * gx + gz * gz + 1), nyv = 1 / nl;
+      /* mesma formula ANALITICA da malha (bowl + declive base, SEM ruido
+         do gradAt): o tint de rocha tem que ser identico ao do mesh */
+      var gxA = 2 * c.bowlK * ax;
+      if (c.mode === "world" && Math.abs(ax) > wRow + 100)
+        gxA += 0.028 * (Math.abs(ax) - (wRow + 100));
+      var gzA = -(c.slope0 + c.slopeAmp * Math.sin(c.slopeK * sC + c.slopePh));
+      var nyv = 1 / Math.sqrt(1 + gxA * gxA + gzA * gzA);
       var r = GROOM[0] * pf + SNOW[0] * (1 - pf),
           gg = GROOM[1] * pf + SNOW[1] * (1 - pf),
           b = GROOM[2] * pf + SNOW[2] * (1 - pf);
@@ -4907,6 +5036,168 @@ function runSelfTests(){
         " esquis, vMax " + vLo.toFixed(0) + "-" + vHi.toFixed(0));
     } finally {
       Game.bots = keepBots;
+    }
+  });
+
+  test("bots: tuck estavel e giro aereo de um lado so", function(){
+    /* (a) tuck com histerese: 8 s de descida real nao pode piscar a
+       pose dezenas de vezes (o codigo antigo ligava/desligava a cada
+       frame no limite do vMax) */
+    var c = makeCourse("free", "med", 4242);
+    var b = botMake(3, c);
+    b.skill = 0.9; b.trait = "cruise"; b.vMax = 12;   // teto baixo: freia cedo
+    var flips = 0, last = null, dt = 0.05;
+    for (var t = 0; t < 160; t++){
+      var inp = botInput(b, c, dt);
+      physStep(b.st, inp, c, dt);
+      if (last === null) last = inp.tuck;
+      else if (inp.tuck !== last){ flips++; last = inp.tuck; }
+    }
+    /* (b) helicoptero: UM sentido por voo. O sinal e decidido uma vez
+       na decolagem (alterna entre voos), nunca invertido no meio do ar */
+    var b2 = botMake(7, c);
+    b2.trait = "trick"; b2.skill = 0.9;
+    var s0 = -1;
+    for (var cand = 80; cand < c.length - 160; cand += 20){
+      var clear = true;
+      for (var j = 0; j < c.ramps.length; j++){
+        var Rr = c.ramps[j];
+        if (Rr.s > cand + 4 && Rr.s < cand + 80) clear = false;
+      }
+      if (clear){ s0 = cand; break; }
+    }
+    if (s0 < 0) return { ok: false, msg: "sem trecho livre de rampas" };
+    b2.st.s = s0; b2.st.z = -s0;
+    b2.st.grounded = false; b2.st.airTime = 0.4;
+    var signs = {}, nSign = 0, sg1 = "";
+    for (var k = 0; k < 30; k++){
+      var inp2 = botInput(b2, c, dt);
+      var sg = inp2.steer > 0.5 ? "+" : (inp2.steer < -0.5 ? "-" : "0");
+      if (!signs[sg]){ signs[sg] = 1; nSign++; if (!sg1) sg1 = sg; }
+      b2.st.s += 0.5;
+    }
+    /* decolagem seguinte gira para o lado oposto (alternancia) */
+    b2.st.grounded = true; botInput(b2, c, dt);
+    b2.st.grounded = false;
+    var inp3 = botInput(b2, c, dt);
+    var sg2 = inp3.steer > 0 ? "+" : "-";
+    return ok(flips <= 8 && nSign === 1 && sg1 !== "0" && sg2 !== sg1,
+      "flips=" + flips + " sinaisNoVoo=" + nSign + " (" + sg1 + ") proximo=" + sg2);
+  });
+
+  test("cam: primeira pessoa acompanha a postura do snowboard", function(){
+    /* no snowboard a cabeca e a do RIDER: postura mais baixa (goggles
+       da pose REAL), e o tombo derruba o olhar ainda mais; no esqui o
+       olhar fica na altura fixa do esquiador */
+    var c = makeCourse("free", "med", 88);
+    var st = newSkierState(c);
+    st.s = 300; st.z = -300;
+    st.x = trackX(c, 300);
+    st.y = heightAt(c, st.x, 300);
+    st.prevGh = st.y;
+    var anim = { crouch: 1, tuck: true };
+    var camB = newCamera("fp"), camS = newCamera("fp");
+    updateCamera(camB, st, c, 0.05, { gear: "board", anim: anim });
+    updateCamera(camS, st, c, 0.05, { gear: "ski", anim: anim });
+    var diff = camS.pos[1] - camB.pos[1];
+    st.crashT = 1;
+    var camC = newCamera("fp");
+    updateCamera(camC, st, c, 0.05, { gear: "board", anim: anim });
+    var diffCrash = camS.pos[1] - camC.pos[1];
+    return ok(diff > 0.15 && diffCrash > diff,
+      "esqui=" + camS.pos[1].toFixed(2) + " prancha=" + camB.pos[1].toFixed(2) +
+      " (d=" + diff.toFixed(2) + ") tomboD=" + diffCrash.toFixed(2));
+  });
+
+  test("ui: toque exibe botoes da tela, nunca teclas", function(){
+    var original = "Segure <kbd>W</kbd> ou <kbd>&#8593;</kbd> (seta para frente) para <b>AGACHAR</b>";
+    if (uiNoKeys(original, false) !== original)
+      return { ok: false, msg: "sem toque o texto tem que sair intacto" };
+    for (var i = 0; i < TUT_STEPS.length; i++){
+      var g = uiNoKeys(TUT_STEPS[i].goal, true);
+      if (g.indexOf("<kbd>") >= 0)
+        return { ok: false, msg: "tecla restante no passo " + TUT_STEPS[i].id };
+      if (TUT_STEPS[i].goal.indexOf("<kbd>") >= 0 && g.indexOf("tchip") < 0)
+        return { ok: false, msg: "passo " + TUT_STEPS[i].id + " sem botao no lugar da tecla" };
+    }
+    var dica = uiNoKeys("Aperte <kbd>Enter</kbd> ou clique em Continuar", true);
+    var ajuda = uiNoKeys("aperte <kbd>E</kbd> para embarcar &#8212; <kbd>S</kbd> + <kbd>Espa&#231;o</kbd>", true);
+    return ok(dica.indexOf("CONTINUAR") >= 0 && dica.indexOf("kbd") < 0 &&
+              ajuda.indexOf("LIFT") >= 0 && ajuda.indexOf("FREIO") >= 0 &&
+              ajuda.indexOf("PULO") >= 0 && ajuda.indexOf("kbd") < 0,
+      "tutorial e ajuda trocam teclas por botoes no toque");
+  });
+
+  test("pausa automatica ao fundo o app durante a corrida", function(){
+    var st0 = Game.state;
+    try {
+      Game.state = "running";
+      autoPauseOnHidden(true);
+      var pausou = Game.state === "paused";
+      autoPauseOnHidden(false);
+      var ficou = Game.state === "paused";
+      Game.state = "menu";
+      autoPauseOnHidden(true);
+      var menuOk = Game.state === "menu";
+      return ok(pausou && ficou && menuOk,
+        "corrida pausa=" + pausou + " segue pausado=" + ficou + " menu intacto=" + menuOk);
+    } finally {
+      Game.state = st0;
+    }
+  });
+
+  test("ui: utilitarios do toque desviam do HUD; HUD some no mundo aberto", function(){
+    /* DOM falso so para este teste: registra classes/estilos tocados */
+    var els = {};
+    function fake(id){
+      if (!els[id]) els[id] = {
+        style: {}, cls: {},
+        classList: {
+          add: function(c){ els[id].cls[c] = true; },
+          remove: function(c){ delete els[id].cls[c]; },
+          toggle: function(c, on){
+            if (on === undefined) on = !els[id].cls[c];
+            if (on) els[id].cls[c] = true; else delete els[id].cls[c];
+            return !!els[id].cls[c];
+          },
+          contains: function(c){ return !!els[id].cls[c]; }
+        }
+      };
+      return els[id];
+    }
+    var oldById = document.getElementById;
+    var oldCourse = Game.course;
+    document.getElementById = fake;
+    try {
+      /* corrida: utilitarios descem (hudshift) e o botao HUD existe */
+      Game.course = makeCourse("free", "med", 2);
+      hudShow(true);
+      if (!els["touch"] || !els["touch"].cls["hudshift"])
+        return { ok: false, msg: "corrida sem hudshift (botoes cobririam o HUD)" };
+      if (els["t-hud"] && els["t-hud"].style.display === "none")
+        return { ok: false, msg: "botao HUD sumiu na corrida" };
+      /* mundo aberto: sem hudshift e SEM botao HUD */
+      Game.course = makeCourse("world", "med", 2);
+      hudShow(true);
+      if (els["touch"].cls["hudshift"])
+        return { ok: false, msg: "hudshift no mundo aberto" };
+      if (!els["t-hud"] || els["t-hud"].style.display !== "none")
+        return { ok: false, msg: "botao HUD presente no mundo aberto" };
+      /* HUD oculto pelo botao: utilitarios voltam ao topo */
+      Game.course = makeCourse("free", "med", 2);
+      hudShow(true);
+      els["hud"].cls["godmode"] = true;
+      touchHudLayout();
+      if (els["touch"].cls["hudshift"])
+        return { ok: false, msg: "hudshift com HUD oculto" };
+      els["hud"].cls["godmode"] = false;
+      touchHudLayout();
+      if (!els["touch"].cls["hudshift"])
+        return { ok: false, msg: "hudshift nao voltou com HUD visivel" };
+      return ok(true, "corrida desce, mundo aberto sem HUD, oculto volta ao topo");
+    } finally {
+      document.getElementById = oldById;
+      Game.course = oldCourse;
     }
   });
 
@@ -6610,9 +6901,13 @@ function updateCamera(cam, st, c, dt, opts){
        - flip em andamento (back/front/lincoln): o olhar gira junto com
          o giro, cabeca colada a rotacao do corpo, como um esquiador real
        - grab: corpo agacha e o olhar desce para o esqui
+       - no SNOWBOARD a cabeca e a do RIDER: posicao REAL dos goggles da
+         pose (postura mais baixa, crouch/tuck/tombo abaixam o olhar) e
+         lean integral de prancha (0.85 vs 0.35 do esqui)
        - fora disso: inclina com a velocidade vertical e o carve (lean) */
     var d0 = Math.sin(st.yaw), d2 = -Math.cos(st.yaw);
     var air = st.grounded === false;
+    var boardFp = opts.gear === "board";
     var eyeH = 1.62;
     var vdL = [0, clamp(st.vy * 0.12, -1.2, 1.2) / 12, -1];
     if (air && st.flipOn && st.flipDeg){
@@ -6625,9 +6920,16 @@ function updateCamera(cam, st, c, dt, opts){
       eyeH = 1.38;                                  // agachado no grab
       vdL = M4.transformDir(M4.rotX(-0.35), vdL);   // olha para o esqui
     }
-    vdL = M4.transformDir(M4.rotZ((st.lean || 0) * 0.35), vdL);
+    vdL = M4.transformDir(M4.rotZ((st.lean || 0) * (boardFp ? 0.85 : 0.35)), vdL);
     vdL = M4.transformDir(M4.rotY(-st.yaw), vdL);
-    var px = st.x + d0 * 0.25, pz = st.z + d2 * 0.25, py = st.y + eyeH;
+    var px, py, pz;
+    if (boardFp){
+      var poseFp = boardPose(st, opts.anim || {}, c);
+      var gp = M4.transformPoint(poseFp.goggles, [0, 0, 0]);
+      px = gp[0]; py = gp[1]; pz = gp[2];
+    } else {
+      px = st.x + d0 * 0.25; pz = st.z + d2 * 0.25; py = st.y + eyeH;
+    }
     cam.pos = [px, py, pz];
     var lx = px + vdL[0] * 12, ly = py + vdL[1] * 12, lz = pz + vdL[2] * 12;
     if (!cam.init){ cam.look = [lx, ly, lz]; cam.init = true; }
@@ -6852,6 +7154,10 @@ var Input = {
   touch: { left: false, right: false, tuck: false, brake: false, skid: false, jump: false },
   isTouch: false
 };
+/* deteccao IMEDIATA (na carga do script, antes do boot): a qualidade
+   padrao e os textos da UI precisam saber se e tela de toque cedo */
+Input.isTouch = !!(window.matchMedia && window.matchMedia("(pointer: coarse)").matches) ||
+                ("ontouchstart" in window);
 var GAME_KEYCODES = {
   KeyA: 1, KeyD: 1, KeyW: 1, KeyS: 1, ArrowLeft: 1, ArrowRight: 1, ArrowUp: 1, ArrowDown: 1,
   Space: 1, ShiftLeft: 1, ShiftRight: 1, KeyC: 1, KeyE: 1, KeyF: 1, KeyR: 1, KeyH: 1, Escape: 1, F3: 1, Backquote: 1
@@ -6869,11 +7175,9 @@ function inputInit(){
   // limpeza total ao perder foco: nenhuma tecla "presa"
   window.addEventListener("blur", function(){ Input.keys = {}; clearTouch(); });
   document.addEventListener("visibilitychange", function(){
-    if (document.hidden){ Input.keys = {}; clearTouch(); }
+    if (document.hidden){ Input.keys = {}; clearTouch(); autoPauseOnHidden(true); }
   });
-  // toque
-  Input.isTouch = (window.matchMedia && matchMedia("(pointer: coarse)").matches) ||
-                   ("ontouchstart" in window);
+  // toque (a deteccao ja foi feita na carga do script; aqui so marca o body)
   if (Input.isTouch) document.body.classList.add("touchmode");
   var map = { "t-left": "left", "t-right": "right", "t-tuck": "tuck",
               "t-brake": "brake", "t-skid": "skid", "t-jump": "jump" };
@@ -6881,14 +7185,19 @@ function inputInit(){
     (function(elId, flag){
       var el = document.getElementById(elId);
       if (!el) return;
-      function down(e){ e.preventDefault(); Input.touch[flag] = true; audioEnsure(); audioResume(); }
-      function up(e){ e.preventDefault(); Input.touch[flag] = false; }
+      function down(e){ e.preventDefault(); Input.touch[flag] = true; el.classList.add("on"); audioEnsure(); audioResume(); }
+      function up(e){ if (e && e.preventDefault) e.preventDefault(); Input.touch[flag] = false; el.classList.remove("on"); }
       el.addEventListener("pointerdown", down);
       el.addEventListener("pointerup", up);
       el.addEventListener("pointercancel", up);
       el.addEventListener("pointerleave", up);
     })(id, map[id]);
   }
+  /* camera e HUD no toque: botoes pequenos no topo direito */
+  var tcm = document.getElementById("t-cam");
+  if (tcm) tcm.addEventListener("pointerdown", function(e){ e.preventDefault(); onKeyPress("KeyC"); });
+  var thd = document.getElementById("t-hud");
+  if (thd) thd.addEventListener("pointerdown", function(e){ e.preventDefault(); onKeyPress("KeyH"); });
   var tp = document.getElementById("t-pause");
   if (tp) tp.addEventListener("pointerdown", function(e){ e.preventDefault(); onKeyPress("Escape"); });
   /* botao LIFT (toque): aparece no Mundo Aberto, embarca no teleferico */
@@ -6903,6 +7212,26 @@ function inputInit(){
   document.addEventListener("touchmove", function(e){
     if (Game.state === "running") e.preventDefault();
   }, { passive: false });
+  // TRAVA DE ZOOM: pinca (2 dedos), gesto nativo do iOS (gesturestart,
+  // ignorado pelo user-scalable=no) e duplo-toque nunca do zoom acidental
+  // na pagina. O jogo e tela cheia de toque.
+  document.addEventListener("gesturestart", function(e){ e.preventDefault(); });
+  document.addEventListener("gesturechange", function(e){ e.preventDefault(); });
+  document.addEventListener("touchmove", function(e){
+    if (e.touches && e.touches.length > 1) e.preventDefault();
+  }, { passive: false });
+  document.addEventListener("dblclick", function(e){ e.preventDefault(); });
+  document.addEventListener("wheel", function(e){
+    if (e.ctrlKey) e.preventDefault();      // pinca de trackpad = zoom do navegador
+  }, { passive: false });
+  // sem menu de contexto no toque longo (segurar botao e do jogo)
+  document.addEventListener("contextmenu", function(e){
+    if (Game.state === "running") e.preventDefault();
+  });
+}
+/* celular ao fundo (home / troca de app): a descida pausa sozinha */
+function autoPauseOnHidden(hidden){
+  if (hidden && Game.state === "running") Game.togglePause();
 }
 function clearTouch(){
   for (var k in Input.touch) Input.touch[k] = false;
@@ -6992,15 +7321,88 @@ function hudPrompt(html){
   el.innerHTML = html;
   el.classList.add("show");
 }
+/* ---------- textos SEM TECLAS no toque: cada <kbd> vira o botao da tela.
+   No celular nao existe teclado: nenhuma referencia a teclas pode
+   sobrar no texto exibido. uiNoKeys(html, touch) devolve o html pronto;
+   sem toque, o texto sai intacto. */
+var UI_KEY_RULES = null;
+function uiKeyRules(){
+  if (UI_KEY_RULES) return UI_KEY_RULES;
+  function chip(t){ return "<b class='tchip'>" + t + "</b>"; }
+  UI_KEY_RULES = [
+    /* frases inteiras primeiro (mais especificas) */
+    ["Aperte <kbd>Enter</kbd> ou clique em Continuar", "Toque em " + chip("CONTINUAR")],
+    ["Aperte <kbd>Enter</kbd> para come&#231;ar", "Toque em " + chip("COME&#199;AR")],
+    ["<kbd>A</kbd> / <kbd>&#8592;</kbd>", chip("&#9664; ESQUERDA")],
+    ["<kbd>D</kbd> / <kbd>&#8594;</kbd>", chip("&#9654; DIREITA")],
+    ["<kbd>A</kbd>/<kbd>D</kbd>", chip("&#9664; ESQUERDA") + " / " + chip("&#9654; DIREITA")],
+    ["<kbd>A</kbd> (ou &#8592;)", chip("&#9664; ESQUERDA")],
+    ["<kbd>D</kbd> (ou &#8594;)", chip("&#9654; DIREITA")],
+    ["<kbd>W</kbd> ou <kbd>&#8593;</kbd> (seta para frente)", chip("AGACHAR")],
+    ["<kbd>S</kbd> ou a seta <kbd>&#8595;</kbd>", chip("FREIO")],
+    /* teclas isoladas */
+    ["<kbd>ESPA&#199;O</kbd>", chip("PULO")],
+    ["<kbd>Espa&#231;o</kbd>", chip("PULO")],
+    ["<kbd>SHIFT</kbd>", chip("DERRAPAR")],
+    ["<kbd>Shift</kbd>", chip("DERRAPAR")],
+    ["<kbd>W</kbd>", chip("AGACHAR")],
+    ["<kbd>S</kbd>", chip("FREIO")],
+    ["<kbd>C</kbd>", chip("CAM")],
+    ["<kbd>H</kbd>", chip("HUD")],
+    ["<kbd>R</kbd>", chip("MENU DE PAUSA")],
+    ["<kbd>E</kbd>", chip("LIFT")],
+    ["<kbd>F</kbd>", chip("TURBO")],
+    ["<kbd>Esc</kbd>", chip("II")],
+    ["<kbd>F3</kbd> ou <kbd>`</kbd>", chip("DIAGN&#211;STICO")],
+    ["<kbd>&#8592;</kbd>", chip("&#9664; ESQUERDA")],
+    ["<kbd>&#8594;</kbd>", chip("&#9654; DIREITA")],
+    ["<kbd>&#8593;</kbd>", chip("AGACHAR")],
+    ["<kbd>&#8595;</kbd>", chip("FREIO")],
+    ["<kbd>Enter</kbd>", chip("CONTINUAR")]
+  ];
+  return UI_KEY_RULES;
+}
+function uiNoKeys(html, touch){
+  if (!html || !touch) return html;
+  var R = uiKeyRules();
+  for (var i = 0; i < R.length; i++)
+    html = html.split(R[i][0]).join(R[i][1]);
+  return html;
+}
+/* adaptacao UNICA do HTML estatico para o toque (boot): ajuda sem
+   teclas, rodape do menu com os botoes da tela, rotulos sem "(R)/(Esc)" */
+function uiTouchStatic(){
+  if (!Input.isTouch) return;
+  var mf = document.querySelector(".menufoot");
+  if (mf) mf.innerHTML = "Controles na tela: &#9664;/&#9654; virar &#8226; " +
+    "<b class='tchip'>AGACHAR</b> &#8226; <b class='tchip'>FREIO</b> &#8226; " +
+    "<b class='tchip'>DERRAPAR</b> &#8226; <b class='tchip'>PULO</b>";
+  var helps = document.querySelectorAll("#m-help .keys, #m-help .note");
+  for (var i = 0; i < helps.length; i++)
+    helps[i].innerHTML = uiNoKeys(helps[i].innerHTML, true);
+  var hd = document.getElementById("hrow-diag");
+  if (hd && hd.parentNode) hd.parentNode.removeChild(hd);   // diagnostico e so teclado
+  var labs = [["btn-resume", "Continuar"],
+              ["btn-restart", "Reiniciar descida"],
+              ["btn-res-again", "Repetir descida"]];
+  for (var j = 0; j < labs.length; j++){
+    var el = document.getElementById(labs[j][0]);
+    if (el) el.textContent = labs[j][1];
+  }
+}
 function hudPromptTick(c, st){
   if (!st || st.crashT > 0 || st.finished){ hudPrompt(null); return; }
   if (Game.ride){
     hudPrompt(Game.ride.turbo ? null :
-      '<span class="kbadge">F</span>TURBO \u2014 acelerar a subida');
+      (Input.isTouch
+        ? "Toque em <b class='tchip'>TURBO</b> para acelerar a subida"
+        : '<span class="kbadge">F</span>TURBO \u2014 acelerar a subida'));
     return;
   }
   if (c && c.resort && c.resort.lifts && liftBoardable(c, st))
-    hudPrompt('<span class="kbadge">E</span>EMBARCAR NO TELEF\u00c9RICO');
+    hudPrompt(Input.isTouch
+      ? "Toque em <b class='tchip'>LIFT</b> para embarcar"
+      : '<span class="kbadge">E</span>EMBARCAR NO TELEF\u00c9RICO');
   else
     hudPrompt(null);
 }
@@ -7333,7 +7735,7 @@ function updateCharPreview(){
   var board = Game.gear === "board";
   if (!CP3D){
     var cv = document.createElement("canvas");
-    cv.width = 176; cv.height = 220;
+    cv.width = 352; cv.height = 440;   // 2x: nitido em telas HiDPI (o CSS reduz)
     host.innerHTML = '<div class="cp-head"></div>';
     host.appendChild(cv);
     var nm = document.createElement("div");
@@ -7443,7 +7845,26 @@ var Game = {
   bots: [], botSkins: {}, botBoardSkins: {}, signs: [], liftMeshes: null
 };
 
-function hudShow(v){ var el = $("hud"); if (el) el.classList.toggle("hidden", !v); if (!v) hudPrompt(null); }
+/* layout dos botoes de utilidade no toque: nas CORRIDAS com HUD visivel
+   eles descem (classe hudshift; o HUD de tempo/pontos ocupa o topo);
+   com o HUD oculto pelo botao HUD voltam ao topo normal. No Mundo Aberto
+   o botao HUD NAO EXISTE (o HUD do modo e minimo e fixo). */
+function touchHudLayout(){
+  var t = document.getElementById("touch");
+  if (!t) return;
+  var world = !!(Game.course && Game.course.mode === "world");
+  var h = document.getElementById("hud");
+  var hudOff = !!(h && h.classList && h.classList.contains("godmode"));
+  t.classList.toggle("hudshift", !world && !hudOff);
+  var thd = document.getElementById("t-hud");
+  if (thd) thd.style.display = world ? "none" : "";
+}
+
+function hudShow(v){
+  var el = $("hud"); if (el) el.classList.toggle("hidden", !v); if (!v) hudPrompt(null);
+  var tc = $("touch"); if (tc) tc.classList.toggle("hidden", !v);   // pads so na corrida
+  touchHudLayout();
+}
 
 function audioSilence(){
   if (!AudioSys.ready) return;
@@ -7558,6 +7979,7 @@ function botMake(i, c){
            look0: r() * 16, carveA: 2 + r() * 5.5,
            restS: 240 + r() * (c.length * 0.55),
            state: "run", restT: 0, nJumps: 0,
+           tuckOn: false, tuckT: 0, brakeOn: false, spinIdx: 0, airPrev: false,
            anim: { crouch: 0.2, armSwing: 0, airPitch: 0, poling: r() * 6.28, landFlex: 0 } };
 }
 function botRespawn(b, c, playerS){
@@ -7604,8 +8026,9 @@ function botInput(b, c, dt){
     tx = c.chokeMainX(K, ksT);
   }
   var aim = inZone ? 12 : look;
+  var wantTuck = b.skill > 0.55 && b.trait !== "rest" && !K;  // com HISTERESE (fim)
   var inp = { steer: clamp((Math.atan2(tx - st.x, aim) - st.yaw) * 2.4, -1, 1),
-              tuck: b.skill > 0.55 && b.trait !== "rest" && !K,
+              tuck: false,
               brake: !!(K && st.speed > 16.5), skid: false, jump: false };
   if (b.trait === "trick"){
     for (var ri = 0; ri < c.ramps.length; ri++){
@@ -7613,12 +8036,15 @@ function botInput(b, c, dt){
       if (rp.s > st.s + 4 && rp.s < st.s + 80){
         inp.steer = clamp((Math.atan2(rp.x - st.x, Math.max(rp.s - st.s, 10)) - st.yaw) * 2.4, -1, 1);
         if (rp.s - st.s < 14 && Math.abs(rp.x - st.x) < rp.w * 0.55 && st.grounded) inp.jump = true;
-        inp.tuck = false;   // levanta para a decolagem natural da rampa
+        wantTuck = false;   // levanta para a decolagem natural da rampa
         break;
       }
     }
     if (!st.grounded){
-      inp.steer = (Math.sin(st.s * 0.9 + b.phase) > 0) ? 1 : -1; // helicoptero
+      /* giro estavel: a direcao do helicoptero e decidida UMA vez por
+         voo (alterna a cada decolagem) - nunca inverte no meio do ar */
+      if (!b.airPrev) b.spinIdx = 1 - (b.spinIdx || 0);
+      inp.steer = b.spinIdx ? 1 : -1;
       inp.skid = (st.airTime > 0.3) && b.skill > 0.75;            // grab dos bons
     }
     /* backflip aereo: dispara no comeco do voo grande; como a rotacao
@@ -7632,7 +8058,7 @@ function botInput(b, c, dt){
     // encosta na borda e freia ate parar: pausa cenica na pista
     var edge = trackX(c, st.s) + (b.lane >= 0 ? 1 : -1) * trackW(c, st.s) * 0.62;
     inp.steer = clamp((Math.atan2(edge - st.x, 12) - st.yaw) * 2.4, -1, 1);
-    inp.brake = true; inp.tuck = false; inp.jump = false;
+    inp.brake = true; wantTuck = false; inp.jump = false;
     if (st.s > b.restS + 220) b.didRest = true; // declive nao deixa parar: desiste
   }
   if (b.trait === "rest" && !b.didRest && st.speed < 1.2 && st.s > b.restS - 40){
@@ -7656,14 +8082,26 @@ function botInput(b, c, dt){
       var lat = (ob.x - st.x) * cy - (ob.s - st.s) * sy;
       if (Math.abs(lat) < (ob.r || 0.5) + 1.15){
         inp.steer = clamp(inp.steer + (lat >= 0 ? -1 : 1) * (1.45 - ahead * 0.05), -1, 1);
-        inp.tuck = false;
+        wantTuck = false;
         break;
       }
     }
   }
   /* teto de velocidade proprio: acima do seu vMax o bot freia em vez
-     de ir alem da propria habilidade */
-  if (st.speed > (b.vMax || 30)){ inp.brake = true; inp.tuck = false; }
+     de ir alem da propria habilidade - com HISTERESE (sai do freio so
+     abaixo de 93% do vMax) para nao oscilar freio/agacho no limite */
+  var vM = b.vMax || 30;
+  if (st.speed > vM) b.brakeOn = true;
+  else if (st.speed < vM * 0.93) b.brakeOn = false;
+  if (b.brakeOn){ inp.brake = true; wantTuck = false; }
+  /* histerese do tuck: so agacha depois de 0.45 s de vontade constante
+     (e desagacha na hora) - a pose nunca pisca varias vezes por segundo */
+  if (wantTuck){
+    b.tuckT += dt;
+    if (!b.tuckOn && b.tuckT >= 0.45) b.tuckOn = true;
+  } else { b.tuckT = 0; b.tuckOn = false; }
+  inp.tuck = b.tuckOn;
+  b.airPrev = !st.grounded;
   return inp;
 }
 /* bot dentro do elevador principal: sobe de gondola no cabo (como o
@@ -7983,7 +8421,7 @@ Game.tutRender = function(){
   if (!s || !g) return;
   if (t) t.textContent = (s.kind === "panel" ? "NEVADA \u2022 TUTORIAL" :
     "TUTORIAL \u2014 PASSO " + (T.i + 1) + " DE " + TUT_STEPS.length);
-  g.innerHTML = s.goal;
+  g.innerHTML = uiNoKeys(s.goal, Input.isTouch);
   var bar = $("tut-barfill");
   if (bar) bar.style.width = Math.round(100 * T.i / (TUT_STEPS.length - 1)) + "%";
   var nx = $("btn-tut-next"), sk = $("btn-tut-skip");
@@ -8182,6 +8620,7 @@ Game.openSettings = function(){
 Game.applySettings = function(){
   var s = Game.save.settings;
   s.quality = Game.pendingQuality || s.quality;
+  s.qset = true;                 // escolha manual: proximos boots respeitam
   s.cam = Game.pendingCam || s.cam;
   s.volume = clamp(parseInt($("in-vol").value, 10) || 0, 0, 100);
   s.muted = $("in-mute").checked;
@@ -8236,6 +8675,7 @@ function onKeyPress(code){
     } else if (code === "KeyH"){
       var h = $("hud");
       if (h) h.classList.toggle("godmode");
+      touchHudLayout();            // botoes do toque voltam ao topo sem HUD
     } else if (code === "KeyE"){
       /* embarque no teleferico (Mundo Aberto) */
       Game.tryRide();
@@ -8519,7 +8959,7 @@ function stepGame(dt){
   G.spray.update(dt, 10.5);
   G.trails.update(dt);
   G.shadow.update(c, st);
-  updateCamera(G.cam, st, c, dt, {});
+  updateCamera(G.cam, st, c, dt, { gear: G.gear, anim: G.anim });
   audioUpdate(st, inp, dt);
   G.chunks.ensure(st.s, 2);
 
@@ -8562,7 +9002,10 @@ function renderWorld(){
   if (!cam) return;
 
   var aspect = GL.canvas.width / Math.max(1, GL.canvas.height);
-  var proj = M4.perspective(cam.fov * Math.PI / 180, aspect, 0.3, GL.viewDist * 2.4);
+  /* retrato (celular em pe): alarga o campo de visao para a pista nao
+     sumir pelas laterais da tela estreita */
+  var fovP = cam.fov + (aspect < 0.75 ? Math.min(16, (0.75 - aspect) * 40) : 0);
+  var proj = M4.perspective(fovP * Math.PI / 180, aspect, 0.3, GL.viewDist * 2.4);
   var view = M4.lookAt(cam.pos, cam.look, [0, 1, 0]);
   GL.vp = M4.mul(proj, view);
 
@@ -8611,11 +9054,18 @@ function renderWorld(){
   drawSigns();
 
   var showSkier = (Game.state === "menu" || !Game.cam || Game.cam.mode !== "fp") && !Game.ride;
-  if (Game.st && showSkier && Game.skier.torso){
+  /* primeira pessoa na prancha: o corpo some, mas o rider ve o PROPRIO
+     DECK sob os pes (no esqui o corpo inteiro ja ficava oculto) */
+  var fpBoard = Game.cam && Game.cam.mode === "fp" && Game.gear === "board" && !Game.ride;
+  if (Game.st && (showSkier || fpBoard) && Game.skier.torso){
     var pose = Game.gear === "board" ? boardPose(Game.st, Game.anim, Game.course)
                                      : skierPose(Game.st, Game.anim, Game.course);
-    for (var name in pose){
-      if (Game.skier[name]) drawMesh(Game.skier[name], pose[name]);
+    if (fpBoard && !showSkier){
+      if (Game.skier.board) drawMesh(Game.skier.board, pose.board);
+    } else {
+      for (var name in pose){
+        if (Game.skier[name]) drawMesh(Game.skier[name], pose[name]);
+      }
     }
   }
   drawBots();
@@ -8813,7 +9263,7 @@ function frame(nowMs){
     /* save + preferencias */
     Game.save = loadSave();
     var s = Game.save.settings;
-    glSetQuality(s.quality);
+    glSetQuality(defaultQuality(Game.save, Input.isTouch));
     Game.mode = s.mode; Game.diff = s.diff; Game.trackMode = s.track;
     Game.camMode = s.cam;
     Game.gear = s.gear; Game.skin = s.skin;
@@ -8844,6 +9294,7 @@ function frame(nowMs){
 
     inputInit();
     uiInit();
+    uiTouchStatic();
 
     window.addEventListener("resize", function(){ glResize(); });
     window.addEventListener("orientationchange", function(){ setTimeout(glResize, 150); });
